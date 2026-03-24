@@ -1,4 +1,4 @@
-# OpenClaw Templates
+# OpenClaw Templates 
 
 Ready-to-use workspace configurations for OpenClaw. Drop one into your server and start talking to your agent immediately.
 
