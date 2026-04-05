@@ -20,7 +20,7 @@ Chad Farquad is a fully configured OpenClaw agent that runs your marketing while
 If you're using git:
 ```bash
 sudo -iu openclaw
-git clone https://github.com/jdanjohnson/openclaw-templates /tmp/openclaw-setup
+git clone https://github.com/HGDWAPP/openclaw-templates /tmp/openclaw-setup
 cp -r /tmp/openclaw-setup/chadfarquad/* ~/.openclaw/workspace/
 cp -r /tmp/openclaw-setup/chadfarquad/.* ~/.openclaw/workspace/ 2>/dev/null
 ```
