@@ -23,6 +23,24 @@ Built for entrepreneurs, creators, and operators who wear many hats. Reads your 
 ### `blank/` — Start From Scratch
 Empty workspace scaffolding with placeholder files. For those who want to build their own agent from the ground up.
 
+### `workshop/` — Build Your AI Command Center (5-Hour Workshop)
+Complete workshop resource pack with course materials and 3 specialist agent templates:
+
+**Course Materials:**
+- `01-CURRICULUM.md` — Full 5-hour workshop curriculum (5 sessions)
+- `02-FACILITATOR-GUIDE.md` — Facilitator scripts, timing, energy cues
+- `03-SLIDES.md` / `03-SLIDES.html` — Slide deck (markdown + interactive HTML)
+- `04-PARTICIPANT-RESOURCES.md` — Worksheets, cheat sheets, templates
+- `05-AGENT-PROMPTS.md` — Copy-paste prompts to install and configure each agent
+- `end-to-end-guide.md` — Full deployment walkthrough (server to proactive agent)
+
+**Specialist Agent Templates:**
+- **Aria** — Brand Strategist & Content Intelligence (scans news, drafts in your voice, pre-screens work)
+- **Scout** — GTM Intelligence & Market Strategist (scans markets, scores leads, tracks competitors)
+- **Atlas** — Investment Intelligence & Opportunity Engine (scans signals, matches patterns, scored proposals)
+
+Each template includes: IDENTITY.md, SOUL.md, USER.md, AGENTS.md, BOOTSTRAP.md, HEARTBEAT.md, a proactive scanning skill, and knowledge file templates.
+
 ## Quick Install
 
 SSH into your server, then:
@@ -40,6 +58,9 @@ cp -r /tmp/openclaw-setup/chadfarquad/* ~/.openclaw/workspace/
 
 # Option C: Blank slate
 cp -r /tmp/openclaw-setup/blank/* ~/.openclaw/workspace/
+
+# Option D: Workshop specialist agent (pick one: aria, scout, or atlas)
+cp -r /tmp/openclaw-setup/workshop/agent-templates/aria/* ~/.openclaw/workspace/
 
 # Then restart
 openclaw restart
