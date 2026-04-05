@@ -450,7 +450,7 @@ Send a message through at least two different methods. You should get the same a
 
 The base setup gives you a capable Chief of Staff agent. But if you want an agent that's *specifically* built for your business type, install one of the specialist templates from the workshop.
 
-### 8.0 Choose Your Template
+### 8.1 Choose Your Template
 
 | Template | Best For | Core Capability |
 |----------|----------|-----------------|
@@ -458,49 +458,317 @@ The base setup gives you a capable Chief of Staff agent. But if you want an agen
 | **Scout** | Sales, BD, GTM | Scans markets, scores leads against your ICP, tracks competitors |
 | **Atlas** | Investment, analysis, deal flow | Scans signals, matches patterns, generates scored proposals |
 
-### 8.1 Install via Agent Prompt
+Pick the one closest to your business. You can always switch later.
 
-Open Telegram and send the install prompt for your chosen agent from `workshop/05-AGENT-PROMPTS.md` (or the [Agent Prompts guide on GitHub](https://github.com/HGDWAPP/openclaw-templates/blob/main/workshop/05-AGENT-PROMPTS.md)).
+### 8.2 Install the Template Pack
 
-The prompt tells your agent to:
-1. Clone the templates repo
-2. Copy the specialist template files to your workspace
-3. Set up knowledge directories
-4. Clean up
+Open Telegram (or the TUI) and send **one** of these messages to your agent depending on which template you chose:
 
-Then restart:
+#### Aria (Brand Strategist & Content Intelligence)
+
+```text
+I need you to install a specialist agent template. Here's what to do:
+
+1. Clone the repo: git clone https://github.com/HGDWAPP/openclaw-templates /tmp/agent-setup
+2. Copy the Aria template files to your workspace:
+   - cp /tmp/agent-setup/workshop/agent-templates/aria/IDENTITY.md ~/.openclaw/workspace/IDENTITY.md
+   - cp /tmp/agent-setup/workshop/agent-templates/aria/SOUL.md ~/.openclaw/workspace/SOUL.md
+   - cp /tmp/agent-setup/workshop/agent-templates/aria/AGENTS.md ~/.openclaw/workspace/AGENTS.md
+   - cp /tmp/agent-setup/workshop/agent-templates/aria/HEARTBEAT.md ~/.openclaw/workspace/HEARTBEAT.md
+   - cp /tmp/agent-setup/workshop/agent-templates/aria/BOOTSTRAP.md ~/.openclaw/workspace/BOOTSTRAP.md
+   - cp /tmp/agent-setup/workshop/agent-templates/aria/USER.md ~/.openclaw/workspace/USER.md
+3. Copy the skills: cp -r /tmp/agent-setup/workshop/agent-templates/aria/skills/. ~/.openclaw/workspace/skills/
+4. Copy the knowledge templates: mkdir -p ~/.openclaw/workspace/knowledge && cp -r /tmp/agent-setup/workshop/agent-templates/aria/knowledge/. ~/.openclaw/workspace/knowledge/
+5. Create memory directories: mkdir -p ~/.openclaw/workspace/memory/{research,drafts,digests}
+6. Clean up: rm -rf /tmp/agent-setup
+7. List what's now in your workspace to confirm everything is there.
+
+Go ahead and do all of this now.
+```
+
+#### Scout (GTM Intelligence & Market Strategist)
+
+```text
+I need you to install a specialist agent template. Here's what to do:
+
+1. Clone the repo: git clone https://github.com/HGDWAPP/openclaw-templates /tmp/agent-setup
+2. Copy the Scout template files to your workspace:
+   - cp /tmp/agent-setup/workshop/agent-templates/scout/IDENTITY.md ~/.openclaw/workspace/IDENTITY.md
+   - cp /tmp/agent-setup/workshop/agent-templates/scout/SOUL.md ~/.openclaw/workspace/SOUL.md
+   - cp /tmp/agent-setup/workshop/agent-templates/scout/AGENTS.md ~/.openclaw/workspace/AGENTS.md
+   - cp /tmp/agent-setup/workshop/agent-templates/scout/HEARTBEAT.md ~/.openclaw/workspace/HEARTBEAT.md
+   - cp /tmp/agent-setup/workshop/agent-templates/scout/BOOTSTRAP.md ~/.openclaw/workspace/BOOTSTRAP.md
+   - cp /tmp/agent-setup/workshop/agent-templates/scout/USER.md ~/.openclaw/workspace/USER.md
+3. Copy the skills: cp -r /tmp/agent-setup/workshop/agent-templates/scout/skills/. ~/.openclaw/workspace/skills/
+4. Copy the knowledge templates: mkdir -p ~/.openclaw/workspace/knowledge && cp -r /tmp/agent-setup/workshop/agent-templates/scout/knowledge/. ~/.openclaw/workspace/knowledge/
+5. Create memory directories: mkdir -p ~/.openclaw/workspace/memory/{research,leads,digests}
+6. Clean up: rm -rf /tmp/agent-setup
+7. List what's now in your workspace to confirm everything is there.
+
+Go ahead and do all of this now.
+```
+
+#### Atlas (Investment Intelligence & Opportunity Engine)
+
+```text
+I need you to install a specialist agent template. Here's what to do:
+
+1. Clone the repo: git clone https://github.com/HGDWAPP/openclaw-templates /tmp/agent-setup
+2. Copy the Atlas template files to your workspace:
+   - cp /tmp/agent-setup/workshop/agent-templates/atlas/IDENTITY.md ~/.openclaw/workspace/IDENTITY.md
+   - cp /tmp/agent-setup/workshop/agent-templates/atlas/SOUL.md ~/.openclaw/workspace/SOUL.md
+   - cp /tmp/agent-setup/workshop/agent-templates/atlas/AGENTS.md ~/.openclaw/workspace/AGENTS.md
+   - cp /tmp/agent-setup/workshop/agent-templates/atlas/HEARTBEAT.md ~/.openclaw/workspace/HEARTBEAT.md
+   - cp /tmp/agent-setup/workshop/agent-templates/atlas/BOOTSTRAP.md ~/.openclaw/workspace/BOOTSTRAP.md
+   - cp /tmp/agent-setup/workshop/agent-templates/atlas/USER.md ~/.openclaw/workspace/USER.md
+3. Copy the skills: cp -r /tmp/agent-setup/workshop/agent-templates/atlas/skills/. ~/.openclaw/workspace/skills/
+4. Copy the knowledge templates: mkdir -p ~/.openclaw/workspace/knowledge && cp -r /tmp/agent-setup/workshop/agent-templates/atlas/knowledge/. ~/.openclaw/workspace/knowledge/
+5. Create memory directories: mkdir -p ~/.openclaw/workspace/memory/{research,deals,digests}
+6. Clean up: rm -rf /tmp/agent-setup
+7. List what's now in your workspace to confirm everything is there.
+
+Go ahead and do all of this now.
+```
+
+Your agent will execute each step and report back. Once it confirms, restart from your SSH terminal:
 
 ```bash
 sudo systemctl restart openclaw
 ```
 
-### 8.2 Load Your Personal Context
+**Verify:**
 
-Send your agent the personal context prompt from the Agent Prompts guide (Step 2). This fills in USER.md and MEMORY.md with YOUR business details.
-
-### 8.3 Fill Out Knowledge Files
-
-Send your agent the knowledge file prompt for your template (Step 3 in the Agent Prompts guide). This is what makes your agent actually smart about YOUR specific business — without these, it's generic.
-
-### 8.4 Run Bootstrap
-
-```text
-Let's run through your bootstrap checklist. Walk me through each step of BOOTSTRAP.md.
+```bash
+sudo -iu openclaw ls /home/openclaw/.openclaw/workspace/
 ```
 
-Your agent walks through setup: model config, memory structure, channels, heartbeats, cron jobs.
+Should show: `AGENTS.md`, `BOOTSTRAP.md`, `HEARTBEAT.md`, `IDENTITY.md`, `SOUL.md`, `USER.md`, `knowledge/`, `memory/`, `skills/`
 
-### 8.5 Test the Proactive Loop
+### 8.3 Load Your Personal Context
 
-Once bootstrap completes, trigger a manual scan:
+This is what makes the agent smart about YOU specifically. Send this to your agent (fill in the blanks):
 
-- **Aria:** `Run a content scan right now.`
-- **Scout:** `Run a market scan right now.`
-- **Atlas:** `Run a signal scan right now.`
+```text
+I'm going to give you my personal context so you can be effective for MY business specifically. Please read everything and update USER.md and MEMORY.md with my information. Then confirm what you learned about me.
 
-You should get back structured, scored results specific to your business.
+Here's who I am:
 
-**Verify:** Your agent returns scored signals with clear reasoning, not generic summaries.
+**Name:** [Your name]
+**Business:** [What you do / your company]
+**Industry:** [Your industry or niche]
+**Role:** [Your title or what you do day-to-day]
+
+**What I sell / offer:**
+[Describe your products, services, or what you're building]
+
+**My audience / customers:**
+[Who are you trying to reach? What do they care about?]
+
+**My goals right now:**
+[What are you focused on for the next 30-90 days?]
+
+**My voice / brand:**
+[How would you describe your communication style? Casual? Professional? Bold? Give examples if you can.]
+
+**Things I care about:**
+[What topics, trends, or ideas are you passionate about?]
+
+**Communication preferences:**
+- Best way to reach me: Telegram
+- When I want updates: [morning / evening / both]
+- How detailed: [bullet points / detailed analysis / just the highlights]
+- Timezone: [Your timezone]
+```
+
+Your agent reads this and immediately becomes smarter about YOUR specific business.
+
+**Verify:** Ask `What do you know about me and my business?` — it should respond with the details you just gave it.
+
+### 8.4 Fill Out Your Knowledge Files
+
+This is the step that makes the agent actually powerful. The knowledge files are what separate "generic chatbot" from "specialist that understands your world." Send **one** of these depending on your agent:
+
+#### For Aria — Voice & Feedback Patterns
+
+```text
+I need to fill out my knowledge files so you can do your job well. Let's start:
+
+**My best content (links or descriptions of posts that performed well):**
+1. [Link or description of your best post/article]
+2. [Another one]
+3. [One more]
+
+**My brand voice rules:**
+- [e.g., "Never use corporate jargon"]
+- [e.g., "Always lead with a story or hot take"]
+- [e.g., "Keep it conversational, like texting a smart friend"]
+
+**My quality bar — what makes content "good enough" to publish:**
+- [e.g., "Has a clear hook in the first line"]
+- [e.g., "Teaches something actionable"]
+- [e.g., "Sounds like me, not like AI"]
+
+**Topics I want to own as a thought leader:**
+- [Topic 1]
+- [Topic 2]
+- [Topic 3]
+
+**Competitors or peers I watch:**
+- [Name/handle 1]
+- [Name/handle 2]
+
+Please update knowledge/voice-samples.md and knowledge/feedback-patterns.md with this information. Then show me what you saved.
+```
+
+#### For Scout — ICP & Growth Frameworks
+
+```text
+I need to fill out my knowledge files so you can do your job well. Let's start:
+
+**My Ideal Customer Profile (ICP):**
+- Industry: [What industry are your best customers in?]
+- Company size: [Revenue range or employee count]
+- Title of decision maker: [Who do you sell to?]
+- Pain points: [What problems do they have that you solve?]
+- Budget range: [What do they typically spend?]
+- How I find them today: [Referrals? Social? Outbound? Events?]
+
+**What makes a lead "hot":**
+- [e.g., "They just raised funding"]
+- [e.g., "They posted about the exact problem we solve"]
+- [e.g., "They're hiring for the role our product replaces"]
+
+**Growth frameworks I follow:**
+- [e.g., "Alex Hormozi — value equation, $100M Offers framework"]
+- [e.g., "Sabri Suby — Sell Like Crazy funnel methodology"]
+- [e.g., "Your own framework or playbook"]
+
+**Competitors to monitor:**
+- [Competitor 1 — what they sell, why they matter]
+- [Competitor 2]
+
+**My current growth channels:**
+- [e.g., LinkedIn outbound, Twitter/X, cold email, partnerships]
+
+Please update knowledge/icp.md and knowledge/influencer-frameworks.md with this information. Then show me what you saved.
+```
+
+#### For Atlas — Investment Thesis & Patterns
+
+```text
+I need to fill out my knowledge files so you can do your job well. Let's start:
+
+**My Investment Thesis:**
+- Sectors I care about: [e.g., "AI infrastructure, fintech, health tech"]
+- Stage preference: [e.g., "Pre-seed to Series A"]
+- Check size: [e.g., "$25K - $100K" or "angel checks"]
+- Geographic focus: [e.g., "US, with interest in emerging markets"]
+- What I look for in founders: [e.g., "Domain experts building in their own industry"]
+
+**Pattern types I'm most interested in:**
+- The Parallel: [e.g., "What worked in fintech applied to health care"]
+- The Convergence: [e.g., "AI + robotics creating new categories"]
+- The Dislocation: [e.g., "Regulatory changes opening windows"]
+- The Infrastructure Play: [e.g., "Picks and shovels for AI adoption"]
+
+**Deal sources I trust:**
+- [e.g., "AngelList, specific Twitter follows, specific newsletters"]
+
+**My conviction scoring — what pushes a deal from 6 to 8+:**
+- [e.g., "Founder has done this before"]
+- [e.g., "Revenue already growing 20%+ MoM"]
+- [e.g., "Clear thesis match on 2+ dimensions"]
+
+**Red flags that kill a deal:**
+- [e.g., "No technical co-founder"]
+- [e.g., "Crowded market with no differentiation"]
+
+Please update knowledge/thesis.md and knowledge/investment-patterns.md with this information. Then show me what you saved.
+```
+
+**Verify:** Ask your agent `What's in my knowledge files?` — it should reference the specific details you just provided.
+
+### 8.5 Run the Bootstrap
+
+```text
+Let's run through your bootstrap checklist. Walk me through each step of BOOTSTRAP.md and let me know what's already done and what still needs setup.
+```
+
+Your agent goes through the BOOTSTRAP.md checklist step by step — model config, memory structure, channels, heartbeats, cron jobs. It tells you what's configured and what still needs attention.
+
+Once bootstrap completes, tell your agent: `Bootstrap is done, delete BOOTSTRAP.md`
+
+### 8.6 Test Your Agent's Superpowers
+
+Now trigger a manual scan to see the proactive intelligence loop in action:
+
+#### For Aria
+
+```text
+Run a content scan right now. Search for trending topics and news in my industry, score each for relevance and angle potential, and draft 3 post ideas in my voice.
+```
+
+#### For Scout
+
+```text
+Run a market scan right now. Search for leads that match my ICP, check what my competitors are doing, and surface the top 3 opportunities with scores.
+```
+
+#### For Atlas
+
+```text
+Run a signal scan right now. Search for recent funding rounds, market shifts, and emerging patterns in my sectors. Score any opportunities against my thesis and give me structured proposals for anything above 7.0 conviction.
+```
+
+**Verify:** Your agent returns scored signals with clear reasoning, not generic summaries. The results should be specific to YOUR business.
+
+### 8.7 Set Up Proactive Schedules
+
+This is what makes your agent run on autopilot — scanning, scoring, and reporting to you on a schedule without you having to ask:
+
+```text
+Set up my recurring cron jobs:
+
+1. Morning brief at 8:00 AM every weekday — summarize overnight signals, today's priorities, and anything needing my attention. Run as a main session event.
+
+2. Proactive scan every 6 hours — run your scanning skill as an isolated session and announce results to Telegram. Only report if something is worth my time.
+
+3. Evening recap at 6:00 PM every weekday — summarize what happened today, what's actionable, and what's on deck for tomorrow. Run as a main session event.
+
+Use my timezone: [YOUR TIMEZONE]
+My Telegram chat ID: [YOUR CHAT ID]
+```
+
+**Verify from SSH:**
+
+```bash
+sudo -iu openclaw openclaw cron list
+```
+
+You should see 3 jobs listed with their schedules.
+
+### 8.8 Verify the Full Loop
+
+Wait for the next scheduled scan to fire (or trigger one manually with Step 8.6). You should get a structured Telegram message with:
+
+- Scored signals/leads/opportunities
+- Clear recommendations
+- Your agent's reasoning for each score
+
+If the message arrives and the scoring makes sense for your business, **your specialist agent is fully operational.**
+
+### Specialist Agent Quick Reference
+
+| You Want To... | Say This |
+|----------------|----------|
+| Get a status update | "What's going on?" |
+| Run a manual scan | "Run a [content/market/signal] scan now" |
+| Check what agent knows about you | "What do you know about me?" |
+| Update your context | "Update my [USER.md/knowledge files] with this: ..." |
+| Add a task | "Add a task: [description]" |
+| See your pipeline | "Show me my [content calendar/lead pipeline/deal pipeline]" |
+| Adjust scan frequency | "Change the scan schedule to every [X] hours" |
+| Get help | "Walk me through your capabilities" |
 
 ---
 
@@ -732,7 +1000,7 @@ Go to [console.anthropic.com](https://console.anthropic.com) and set a daily spe
 | Cron jobs not running | `sudo -iu openclaw openclaw cron list` — check times and timezone |
 | Dashboard won't load via HTTPS | Try SSH tunnel method (Stage 7.3 Method 2) |
 | `openclaw update` says "SKIPPED" | Use `sudo npm i -g openclaw@latest` instead |
-| "origin not allowed" on dashboard | Run the gateway commands from Stage 3 |
+| "origin not allowed" on dashboard | Run the gateway config commands from Stage 7.3 (allowedOrigins + trustedProxies) |
 | "pairing required" on dashboard | Run `sudo -iu openclaw openclaw devices approve --latest` in SSH, then click Connect again |
 | "No pairing request found" | Click Connect in browser FIRST, then run approve in SSH, then Connect again |
 | "gateway token mismatch" | See **Fixing "Gateway Token Mismatch"** below — this is usually a dual-config problem |

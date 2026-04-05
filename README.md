@@ -27,7 +27,7 @@ Empty workspace scaffolding with placeholder files. For those who want to build 
 Complete workshop resource pack with course materials and 3 specialist agent templates:
 
 **Course Materials:**
-- `01-CURRICULUM.md` — Full 5-hour workshop curriculum (5 sessions)
+- `01-CURRICULUM.md` — Full 5-hour workshop curriculum (6 sessions)
 - `02-FACILITATOR-GUIDE.md` — Facilitator scripts, timing, energy cues
 - `03-SLIDES.md` / `03-SLIDES.html` — Slide deck (markdown + interactive HTML)
 - `04-PARTICIPANT-RESOURCES.md` — Worksheets, cheat sheets, templates
@@ -47,7 +47,7 @@ SSH into your server, then:
 
 ```bash
 sudo -iu openclaw
-git clone https://github.com/jdanjohnson/openclaw-templates /tmp/openclaw-setup
+git clone https://github.com/HGDWAPP/openclaw-templates /tmp/openclaw-setup
 
 # Choose ONE:
 # Option A: Chief of Staff (recommended for course)
