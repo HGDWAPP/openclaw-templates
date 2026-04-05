@@ -508,7 +508,7 @@ You should get back structured, scored results specific to your business.
 
 > **Note:** If you installed a specialist template in Stage 8, your agent already has task management capabilities built in. This stage is for the base (preloaded) setup.
 
-### 8.1 Test the Task Board
+### 9.1 Test the Task Board
 
 In Telegram:
 
@@ -532,7 +532,7 @@ What's on my plate?
 
 Your agent responds with the formatted kanban board each time.
 
-### 8.2 Set Up Cron Jobs
+### 9.2 Set Up Cron Jobs
 
 Tell your agent in Telegram:
 
@@ -598,7 +598,7 @@ Set up a recurring cron job: Every Sunday at 7:00 PM, run the weekly-digest skil
 
 Web search lets your agent research topics in real time instead of relying only on its training data.
 
-### 10.1 Set Up a Search Provider
+### 11.1 Set Up a Search Provider
 
 ```bash
 sudo -iu openclaw openclaw configure --section web
@@ -614,7 +614,7 @@ The wizard asks for a search provider. **Brave Search** is recommended (free tie
 sudo systemctl restart openclaw
 ```
 
-### 10.2 Test It
+### 11.2 Test It
 
 ```text
 Search the web for the latest trends in AI automation for small businesses
@@ -628,7 +628,7 @@ Search the web for the latest trends in AI automation for small businesses
 
 Run through these after your setup is working. Each one makes your agent faster and cheaper.
 
-### 11.1 Trim Workspace Files
+### 12.1 Trim Workspace Files
 
 Ask your agent:
 
@@ -639,7 +639,7 @@ For each one, tell me the file size in bytes.
 
 **Target sizes:** SOUL.md < 1 KB, AGENTS.md < 10 KB, MEMORY.md < 3 KB, IDENTITY.md < 1 KB, HEARTBEAT.md < 1 KB. If any are over, move details into `memory/` files.
 
-### 11.2 Set Heartbeat to 60 Minutes
+### 12.2 Set Heartbeat to 60 Minutes
 
 The default 30-minute heartbeat is aggressive for most setups:
 
@@ -648,14 +648,14 @@ sudo -iu openclaw openclaw config set agents.defaults.heartbeat.every '"3600"'
 sudo systemctl restart openclaw
 ```
 
-### 11.3 Use a Cheaper Model for Heartbeats
+### 12.3 Use a Cheaper Model for Heartbeats
 
 ```bash
 sudo -iu openclaw openclaw config set agents.defaults.heartbeat.model '"anthropic/claude-haiku-3"'
 sudo systemctl restart openclaw
 ```
 
-### 11.4 Audit Cron Jobs
+### 12.4 Audit Cron Jobs
 
 ```bash
 sudo -iu openclaw openclaw cron list
@@ -663,7 +663,7 @@ sudo -iu openclaw openclaw cron list
 
 Remove any test jobs you forgot about. Keep only: morning standup, evening review, weekly digest.
 
-### 11.5 Set Spending Alerts
+### 12.5 Set Spending Alerts
 
 Go to [console.anthropic.com](https://console.anthropic.com) and set a daily spending limit.
 
