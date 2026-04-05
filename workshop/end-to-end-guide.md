@@ -1000,7 +1000,7 @@ Go to [console.anthropic.com](https://console.anthropic.com) and set a daily spe
 | Cron jobs not running | `sudo -iu openclaw openclaw cron list` — check times and timezone |
 | Dashboard won't load via HTTPS | Try SSH tunnel method (Stage 7.3 Method 2) |
 | `openclaw update` says "SKIPPED" | Use `sudo npm i -g openclaw@latest` instead |
-| "origin not allowed" on dashboard | Run the gateway commands from Stage 3 |
+| "origin not allowed" on dashboard | Run the gateway config commands from Stage 7.3 (allowedOrigins + trustedProxies) |
 | "pairing required" on dashboard | Run `sudo -iu openclaw openclaw devices approve --latest` in SSH, then click Connect again |
 | "No pairing request found" | Click Connect in browser FIRST, then run approve in SSH, then Connect again |
 | "gateway token mismatch" | See **Fixing "Gateway Token Mismatch"** below — this is usually a dual-config problem |

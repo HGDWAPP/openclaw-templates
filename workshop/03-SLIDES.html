@@ -671,7 +671,7 @@ API key             Always on</code></pre>
 </div>
 
 <!-- ═══════════════════════════════════════════ -->
-<!-- SLIDE 22 -->
+<!-- SLIDE 22: Why DigitalOcean -->
 <!-- ═══════════════════════════════════════════ -->
 <div class="slide">
   <h1>Why DigitalOcean?</h1>
@@ -679,70 +679,138 @@ API key             Always on</code></pre>
     <li><strong>Your own server.</strong> YOUR data stays on YOUR machine.</li>
     <li><strong>Always on.</strong> Runs 24/7 even when your laptop is closed.</li>
     <li><strong>Simple.</strong> One server, one agent, no complicated setup.</li>
-    <li><strong>Affordable.</strong> ~$6-24/month.</li>
+    <li><strong>Affordable.</strong> $12/month ($6 for basic).</li>
   </ul>
   <p style="margin-top:1em;">You're getting:</p>
   <ul>
     <li>A cloud server with OpenClaw pre-installed</li>
-    <li>Your own IP address</li>
-    <li>SSH access</li>
-    <li>The OpenClaw dashboard</li>
-    <li>Telegram integration</li>
+    <li>Your own IP address + SSH access</li>
+    <li>Telegram integration + web dashboard</li>
   </ul>
 </div>
 
 <!-- ═══════════════════════════════════════════ -->
-<!-- SLIDE 23 -->
+<!-- SLIDE 23: The Stages -->
 <!-- ═══════════════════════════════════════════ -->
 <div class="slide">
-  <h1>What We're Doing Now</h1>
-  <ol>
-    <li>Connect to your server (SSH)</li>
-    <li>Run the setup wizard</li>
-    <li>Open the dashboard</li>
-    <li>Say hi to your agent</li>
-    <li>Pair your phone (Telegram)</li>
-    <li>Customize its personality</li>
-    <li>Set up the first heartbeat</li>
-  </ol>
+  <h1>Our Deployment Stages</h1>
+  <table>
+    <thead><tr><th>Stage</th><th>What We Do</th></tr></thead>
+    <tbody>
+      <tr><td><strong>1</strong></td><td>Create &amp; connect to your server (SSH)</td></tr>
+      <tr><td><strong>2</strong></td><td>Prepare the server (swap memory + update)</td></tr>
+      <tr><td><strong>3</strong></td><td>Run the onboard wizard</td></tr>
+      <tr><td><strong>4</strong></td><td>Connect Telegram</td></tr>
+      <tr><td><strong>5</strong></td><td>Install config templates (agent does it!)</td></tr>
+      <tr><td><strong>6</strong></td><td>Load your AI Command Center</td></tr>
+      <tr><td><strong>7</strong></td><td>Access methods: Telegram, TUI, Dashboard</td></tr>
+    </tbody>
+  </table>
   <p style="margin-top:1em;"><strong>Do NOT jump ahead. Wait for each step.</strong></p>
 </div>
 
 <!-- ═══════════════════════════════════════════ -->
-<!-- SLIDE 24 -->
+<!-- SLIDE 24: Stage 1 - SSH -->
 <!-- ═══════════════════════════════════════════ -->
 <div class="slide">
-  <h1>Step 1: Connect to Your Server</h1>
+  <h1>Stage 1: Connect to Your Server</h1>
   <p>Open your terminal. Type:</p>
   <pre><code>ssh root@YOUR_IP_ADDRESS</code></pre>
   <p>Type your password (you won't see characters &mdash; that's normal).</p>
-  <p style="margin-top:1em;">You should see: <code>root@your-droplet:~#</code></p>
-  <p style="margin-top:1em;"><strong>You're in.</strong></p>
+  <p style="margin-top:0.8em;">First time asks "continue connecting?" &mdash; type <code>yes</code>.</p>
+  <p style="margin-top:0.8em;">You'll see a model prompt. <strong>Press Ctrl+C to skip it.</strong></p>
+  <p style="margin-top:0.8em;">You should see: <code>root@your-droplet:~#</code></p>
+  <p style="margin-top:0.8em;"><strong>You're in.</strong></p>
 </div>
 
 <!-- ═══════════════════════════════════════════ -->
-<!-- SLIDE 25 -->
+<!-- SLIDE 25: The Two Users -->
 <!-- ═══════════════════════════════════════════ -->
 <div class="slide">
-  <h1>Step 2: Run the Setup Wizard</h1>
+  <h1>The Two Users (Important!)</h1>
+  <table>
+    <thead><tr><th>Account</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><code>root</code></td><td>System admin (updates, firewall)</td></tr>
+      <tr><td><code>openclaw</code></td><td>OpenClaw runtime (config, API keys, workspace)</td></tr>
+    </tbody>
+  </table>
+  <p style="margin-top:1em;"><strong>Golden rule:</strong> Every <code>openclaw</code> command needs this prefix:</p>
+  <pre><code># WRONG (creates a second config with a different token!)
+openclaw onboard
+
+# RIGHT
+sudo -iu openclaw openclaw onboard</code></pre>
+  <p style="margin-top:0.5em;"><em>Running bare <code>openclaw</code> as root = token mismatch errors later.</em></p>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SLIDE 26: Stage 2 - Swap Memory -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="slide">
+  <h1>Stage 2.1: Add Swap Memory</h1>
+  <p>Your $12 droplet has 2 GB RAM. Swap prevents crashes under load.</p>
+  <p>Run these <strong>as root</strong> (not as the openclaw user):</p>
+  <pre><code>fallocate -l 2G /swapfile
+chmod 600 /swapfile
+mkswap /swapfile
+swapon /swapfile
+echo '/swapfile none swap sw 0 0' >> /etc/fstab</code></pre>
+  <p style="margin-top:0.5em;"><strong>Verify:</strong></p>
+  <pre><code>free -h</code></pre>
+  <p>You should see a "Swap" row showing <code>2.0G</code> total.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SLIDE 27: Stage 2.2 - Update OpenClaw -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="slide">
+  <h1>Stage 2.2: Update OpenClaw</h1>
+  <pre><code>sudo npm i -g openclaw@latest</code></pre>
+  <p><em>Why npm? The DigitalOcean image installs via npm. Running <code>openclaw update</code> returns "SKIPPED: not-git-install."</em></p>
+  <p style="margin-top:1em;"><strong>Verify:</strong></p>
+  <pre><code>sudo -iu openclaw openclaw --version</code></pre>
+  <p>Should show <code>v2026.3.x</code> or newer. Then restart:</p>
+  <pre><code>sudo systemctl restart openclaw</code></pre>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SLIDE 28: Stage 3 - Onboard Wizard -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="slide">
+  <h1>Stage 3: Run the Onboard Wizard</h1>
   <pre><code>sudo -iu openclaw openclaw onboard</code></pre>
-  <p>You'll choose:</p>
-  <ul>
-    <li><strong>Agent name</strong> (pick something fun!)</li>
-    <li><strong>AI model</strong> (Claude via OpenRouter)</li>
-    <li><strong>Messaging channel</strong> (Telegram)</li>
-  </ul>
+  <p>The wizard walks through:</p>
+  <ol>
+    <li><strong>QuickStart vs Advanced</strong> &mdash; Choose <strong>QuickStart</strong></li>
+    <li><strong>Model / Auth</strong> &mdash; Select Anthropic / Claude, paste your API key</li>
+    <li><strong>Workspace</strong> &mdash; Accept the default</li>
+    <li><strong>Gateway</strong> &mdash; Defaults are fine (token auto-generated)</li>
+    <li><strong>Channels</strong> &mdash; Skip for now (we'll do Telegram next)</li>
+    <li><strong>Daemon</strong> &mdash; Install the systemd service</li>
+    <li><strong>Health check</strong> &mdash; Verifies gateway starts</li>
+  </ol>
 </div>
 
 <!-- ═══════════════════════════════════════════ -->
-<!-- SLIDE 26 -->
+<!-- SLIDE 29: Verify Onboard -->
 <!-- ═══════════════════════════════════════════ -->
 <div class="slide">
-  <h1>Quick Telegram Bot Setup</h1>
-  <p>If you haven't done this yet:</p>
+  <h1>Stage 3: Verify It Worked</h1>
+  <pre><code>sudo -iu openclaw openclaw health</code></pre>
+  <p>Green checks or passing status. A Telegram warning is expected.</p>
+  <pre><code>sudo -iu openclaw openclaw config validate --json</code></pre>
+  <p>Valid config, no errors.</p>
+  <p style="margin-top:1em;"><em>The dashboard comes in Stage 7 &mdash; after Telegram and TUI.</em></p>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SLIDE 30: Stage 4 - Telegram Bot -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="slide">
+  <h1>Stage 4: Create Your Telegram Bot</h1>
   <ol>
-    <li>Open Telegram</li>
-    <li>Search for <strong>@BotFather</strong></li>
+    <li>Open Telegram, search for <strong>@BotFather</strong></li>
     <li>Send: <code>/newbot</code></li>
     <li>Pick a name (e.g., "My AI Assistant")</li>
     <li>Pick a username (must end in "bot")</li>
@@ -751,71 +819,235 @@ API key             Always on</code></pre>
 </div>
 
 <!-- ═══════════════════════════════════════════ -->
-<!-- SLIDE 27 -->
+<!-- SLIDE 31: Connect Telegram -->
 <!-- ═══════════════════════════════════════════ -->
 <div class="slide">
-  <h1>Step 3: Open the Dashboard</h1>
-  <p>In your browser: <code>https://YOUR_IP_ADDRESS</code></p>
-  <p><em>(Click through the security warning &mdash; that's expected)</em></p>
-  <p style="margin-top:1em;">Enter your gateway token. Click Connect.</p>
-  <p style="margin-top:1em;">If "pairing required":</p>
-  <pre><code>sudo -iu openclaw openclaw devices approve --latest</code></pre>
-  <p>Then click Connect again.</p>
+  <h1>Stage 4: Connect Telegram to OpenClaw</h1>
+  <pre><code># Connect the bot
+sudo -iu openclaw openclaw configure --section channels
+# Select Telegram, paste your bot token
+
+# Set your Telegram user ID (message @userinfobot to find it)
+sudo -iu openclaw openclaw configure --section telegram-dm
+
+# Restart
+sudo systemctl restart openclaw</code></pre>
+  <p style="margin-top:1em;"><strong>Verify:</strong> Open Telegram, find your bot, send "Hey! Are you alive?"</p>
+  <p>You should get a response. <strong>Your agent is alive!</strong></p>
 </div>
 
 <!-- ═══════════════════════════════════════════ -->
-<!-- SLIDE 28 -->
+<!-- SLIDE 32: Say Hi -->
 <!-- ═══════════════════════════════════════════ -->
 <div class="slide slide-break" style="background: linear-gradient(135deg, #1a1040 0%, #0a2020 100%);">
   <h1>Say Hi to Your Agent!</h1>
-  <h2>Type in the dashboard chat:</h2>
+  <h2>Send a message in Telegram:</h2>
   <p style="font-size:2rem; margin-top:1em; color: var(--accent-light);"><strong>"Hey! Are you alive?"</strong></p>
-  <p style="margin-top:1em;"><em>Watch for the response...</em></p>
+  <p style="margin-top:1em;"><em>Watch for the response on your phone...</em></p>
 </div>
 
 <!-- ═══════════════════════════════════════════ -->
-<!-- SLIDE 29 -->
+<!-- SLIDE 33: Stage 5 - Install Config -->
 <!-- ═══════════════════════════════════════════ -->
 <div class="slide">
-  <h1>Step 4: Pair Your Phone</h1>
-  <p>Open Telegram. Find your bot. Send a message.</p>
-  <p style="margin-top:1em;">If no response:</p>
-  <pre><code>sudo -iu openclaw openclaw devices approve --latest</code></pre>
-  <p>Try messaging again.</p>
-  <p style="margin-top:1.5em;font-size:1.6rem;"><strong>Your agent is now on your phone.</strong></p>
+  <h1>Stage 5: Install Config Templates</h1>
+  <p>Instead of manually copying files, <strong>let your agent do it!</strong></p>
+  <p style="margin-top:0.8em;">Send this to your agent in Telegram:</p>
+  <pre><code style="font-size:0.85rem;">I need you to install your configuration files.
+1. Clone: git clone https://github.com/HGDWAPP/openclaw-templates /tmp/openclaw-setup-repo
+2. Copy configs to your workspace (SOUL.md, MEMORY.md, AGENTS.md, HEARTBEAT.md, IDENTITY.md)
+3. Copy skills folder
+4. Create memory directories
+5. Clean up and confirm</code></pre>
+  <p style="margin-top:0.5em;"><em>Full prompt is in your end-to-end guide &mdash; Stage 5.</em></p>
 </div>
 
 <!-- ═══════════════════════════════════════════ -->
-<!-- SLIDE 30 -->
+<!-- SLIDE 34: Verify Config -->
 <!-- ═══════════════════════════════════════════ -->
 <div class="slide">
-  <h1>Step 5: Make It Yours</h1>
-  <p>Edit your workspace:</p>
-  <pre><code>sudo -iu openclaw nano /home/openclaw/.openclaw/workspace/IDENTITY.md</code></pre>
-  <h3>Nano basics:</h3>
+  <h1>Stage 5: Verify Templates Installed</h1>
+  <pre><code>sudo systemctl restart openclaw</code></pre>
+  <pre><code>sudo -iu openclaw ls /home/openclaw/.openclaw/workspace/</code></pre>
+  <p>Should show: <code>AGENTS.md</code>, <code>HEARTBEAT.md</code>, <code>IDENTITY.md</code>, <code>MEMORY.md</code>, <code>SOUL.md</code>, <code>memory/</code>, <code>skills/</code></p>
+  <pre><code>sudo -iu openclaw ls /home/openclaw/.openclaw/workspace/skills/</code></pre>
+  <p>Should show 8 skill folders.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SLIDE 35: Stage 6 - Command Center -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="slide">
+  <h1>Stage 6: Load Your AI Command Center</h1>
+  <p>Send your Command Center document to your agent in Telegram:</p>
+  <pre><code style="font-size:0.9rem;">I'm pasting my AI Command Center. Read everything
+and update MEMORY.md with my information.
+Then confirm what you learned about me.
+
+[PASTE YOUR COMMAND CENTER HERE]</code></pre>
+  <p style="margin-top:1em;"><strong>Verify:</strong> Ask your agent: "What do you know about me and my business?"</p>
+  <p>It should respond with details from your Command Center.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SLIDE 36: Stage 7 - Access Methods Overview -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="slide">
+  <h1>Stage 7: Three Ways to Talk to Your Agent</h1>
+  <table>
+    <thead><tr><th>Method</th><th>Best For</th><th>How</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Telegram</strong></td><td>On-the-go, phone</td><td>Already set up (Stage 4)</td></tr>
+      <tr><td><strong>TUI</strong></td><td>Power users, terminal</td><td>SSH + <code>openclaw tui</code></td></tr>
+      <tr><td><strong>Dashboard</strong></td><td>Visual, browser-based</td><td><code>https://YOUR_IP</code></td></tr>
+    </tbody>
+  </table>
+  <p style="margin-top:1em;">Let's set up the TUI and Dashboard now.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SLIDE 37: Stage 7.2 - TUI -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="slide">
+  <h1>Stage 7.2: TUI (Terminal Chat)</h1>
+  <pre><code>sudo -iu openclaw openclaw tui --deliver</code></pre>
+  <p>The <code>--deliver</code> flag enables message sending immediately.</p>
+  <table>
+    <thead><tr><th>Command</th><th>What It Does</th></tr></thead>
+    <tbody>
+      <tr><td><code>/deliver on</code></td><td>Start sending messages</td></tr>
+      <tr><td><code>/deliver off</code></td><td>Observe mode</td></tr>
+      <tr><td><code>/session new</code></td><td>Start a new session</td></tr>
+      <tr><td><code>Ctrl+T</code></td><td>Toggle thinking visibility</td></tr>
+      <tr><td><code>Ctrl+C</code></td><td>Exit the TUI</td></tr>
+    </tbody>
+  </table>
+  <p style="margin-top:0.5em;"><strong>Test it:</strong> Type a message and make sure you get a response.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SLIDE 38: Gateway Config -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="slide">
+  <h1>Stage 7.3: Configure Gateway for Dashboard</h1>
+  <p><strong>Exit the TUI</strong> (Ctrl+C), close SSH (<code>exit</code>), open a fresh SSH:</p>
+  <pre><code># Allow browser connections
+sudo -iu openclaw openclaw config set \
+  gateway.controlUi.allowedOrigins '["*"]'
+
+# Trust the reverse proxy (Caddy)
+sudo -iu openclaw openclaw config set \
+  gateway.trustedProxies '["127.0.0.1", "::1"]'
+
+# Get your gateway token (save this!)
+sudo -iu openclaw cat ~/.openclaw/openclaw.json \
+  | grep -o '"token":"[^"]*"' | head -1</code></pre>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SLIDE 39: Gateway Keep-Alive -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="slide">
+  <h1>Stage 7.3: Keep the Gateway Alive</h1>
+  <p><strong>DigitalOcean bug fix:</strong> The gateway can silently stop. This wrapper auto-restarts it.</p>
+  <pre><code style="font-size:0.8rem;"># Create the wrapper script
+sudo tee /opt/openclaw-start.sh > /dev/null &lt;&lt; 'SCRIPT'
+#!/bin/bash
+cleanup() { kill $GATEWAY_PID 2>/dev/null; exit 0; }
+trap cleanup SIGTERM SIGINT
+while true; do
+    pkill -9 -f 'openclaw-gateway' 2>/dev/null
+    sleep 2
+    /usr/bin/openclaw gateway --port 18789 --allow-unconfigured &amp;
+    GATEWAY_PID=$!
+    for i in $(seq 1 60); do
+        if ss -tlnp | grep -q ':18789'; then break; fi
+        sleep 1
+    done
+    if ! ss -tlnp | grep -q ':18789'; then continue; fi
+    while kill -0 $GATEWAY_PID 2>/dev/null &amp;&amp; \
+          ss -tlnp | grep -q ':18789'; do
+        sleep 10
+    done
+    sleep 5
+done
+SCRIPT
+sudo chmod +x /opt/openclaw-start.sh</code></pre>
+  <p style="margin-top:0.3em;"><em>Full commands in your end-to-end guide &mdash; Stage 7.3</em></p>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SLIDE 40: Systemd Service Update -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="slide">
+  <h1>Stage 7.3: Update the Service</h1>
+  <p>Tell systemd to use the wrapper:</p>
+  <pre><code>sudo tee /etc/systemd/system/openclaw.service > /dev/null &lt;&lt; 'SERVICE'
+[Unit]
+Description=OpenClaw Gateway
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/openclaw-start.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+SERVICE
+sudo systemctl daemon-reload
+sudo systemctl restart openclaw</code></pre>
+  <p style="margin-top:0.5em;"><strong>What this does:</strong> Monitors the gateway every 10 seconds. Auto-restarts if it dies. No more silent crashes.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SLIDE 41: Open Dashboard -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="slide">
+  <h1>Stage 7.3: Open the Dashboard</h1>
+  <p>In your browser (on your MacBook, not the server):</p>
+  <pre><code>https://YOUR_DROPLET_IP</code></pre>
+  <p><em>Click through the SSL warning &mdash; that's expected for an IP address.</em></p>
+  <p style="margin-top:0.8em;">On the connection screen:</p>
+  <ol>
+    <li><strong>WebSocket URL</strong> &mdash; should be pre-filled</li>
+    <li><strong>Gateway Token</strong> &mdash; paste the token you saved</li>
+    <li>Click <strong>Connect</strong></li>
+  </ol>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SLIDE 42: Device Pairing -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="slide">
+  <h1>Stage 7.3: Device Pairing</h1>
+  <p>"Pairing required" &mdash; this is a security feature.</p>
+  <p style="margin-top:0.8em;"><strong>The order matters:</strong></p>
+  <ol>
+    <li>Click <strong>Connect</strong> in browser (creates the pairing request)</li>
+    <li>In SSH: <code>sudo -iu openclaw openclaw devices approve --latest</code></li>
+    <li>Click <strong>Connect</strong> again in browser</li>
+  </ol>
+  <p style="margin-top:0.8em;">Once paired, you won't need to do this again on the same browser.</p>
+  <p style="margin-top:0.8em;"><strong>Fallback:</strong> If HTTPS doesn't work, use SSH tunnel:</p>
+  <pre><code>ssh -N -L 18789:127.0.0.1:18789 root@YOUR_IP
+# Then visit: http://localhost:18789</code></pre>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SLIDE 43: Verify Multi-Channel -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="slide">
+  <h1>Stage 7.4: Verify Everything Works</h1>
+  <p>Send a message through <strong>at least two different methods:</strong></p>
   <ul>
-    <li>Just type to edit</li>
-    <li><kbd>Ctrl+O</kbd> then Enter = save</li>
-    <li><kbd>Ctrl+X</kbd> = exit</li>
+    <li>Telegram (phone)</li>
+    <li>TUI (terminal)</li>
+    <li>Dashboard (browser)</li>
   </ul>
-  <p style="margin-top:1em;"><strong>Use the templates in your packet!</strong></p>
-</div>
-
-<!-- ═══════════════════════════════════════════ -->
-<!-- SLIDE 31 -->
-<!-- ═══════════════════════════════════════════ -->
-<div class="slide">
-  <h1>Step 6: Set Up Your Heartbeat</h1>
-  <p>The heartbeat makes your agent <strong>proactive</strong>:</p>
-  <pre><code>sudo -iu openclaw nano /home/openclaw/.openclaw/workspace/HEARTBEAT.md</code></pre>
-  <p style="margin-top:1em;"><strong>Critical rule:</strong> 80% of heartbeats return <code>HEARTBEAT_OK</code> (silence).</p>
-  <p>You only hear from your agent when something <strong>needs your attention.</strong></p>
-  <h3>Priority levels:</h3>
-  <ul>
-    <li><strong>URGENT</strong> = act within 2 hours</li>
-    <li><strong>IMPORTANT</strong> = handle today</li>
-    <li><strong>AWARENESS</strong> = daily summary</li>
-  </ul>
+  <p style="margin-top:1em;">Same agent, same personality, all three channels.</p>
+  <p style="margin-top:1.5em;font-size:1.6rem;"><strong>Your AI Command Center is live.</strong></p>
 </div>
 
 <!-- ═══════════════════════════════════════════ -->

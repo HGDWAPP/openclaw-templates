@@ -195,26 +195,28 @@ If anyone has questions, answer them 1:1 during the break. Some people have ques
 ## SESSION 3: Deploy Your Agent on DigitalOcean (1:35 - 2:45)
 
 ### Energy Target: Focused + Hands-Dirty
-This is the most technical session. Go SLOW. Check in constantly.
+This is the most technical session. Go SLOW. Check in constantly. Follow the **end-to-end guide** (Stages 1-7) step by step.
 
 ### Opening (1:35 - 1:40)
 
 ```
 "Okay. This is where it gets real. In the next hour, your agent
-is going to come alive. We're going to:
-1. Connect to your servers
-2. Run the setup wizard
-3. Open the dashboard
-4. Talk to your agent for the first time
-5. Customize its personality
-6. Set up the first heartbeat
+is going to come alive. We have 7 stages:
+
+1. Connect to your server (SSH)
+2. Prepare the server (swap memory + update)
+3. Run the onboard wizard
+4. Connect Telegram
+5. Install config templates (your agent does this!)
+6. Load your AI Command Center
+7. Set up access: Telegram, TUI, and Dashboard
 
 I'm going to go step by step. Do NOT jump ahead. Wait for me
 before each step. If something looks different on your screen,
 say so immediately. Ready? Let's do it."
 ```
 
-### Step 1: SSH Connection (1:40 - 1:50)
+### Stage 1: SSH Connection (1:40 - 1:48)
 
 **Go VERY slow here. Many people have never used a terminal.**
 
@@ -226,7 +228,7 @@ Now type exactly this -- I'll spell it out:
 
 ssh root@[READ THEIR IP ADDRESS]
 
-Then press Enter."
+Then press Enter. First time it asks 'continue connecting?' -- type yes."
 ```
 
 Walk around and verify everyone's terminal shows the password prompt.
@@ -237,96 +239,257 @@ that's a security feature, not a bug. Trust me, it's working.
 Press Enter when done."
 ```
 
+**Important:** When they land, there's a model picker prompt. Tell them: "Press Ctrl+C to skip past that for now."
+
 > **WIN MOMENT:** When they see the `root@droplet:~#` prompt. "You're IN. You're logged into a server in the cloud. That's actually kind of badass."
 
-### Step 2: Setup Wizard (1:50 - 2:05)
+**Explain the two users:**
+```
+"Quick note: there are two accounts on this server.
+root -- that's the system admin (you're using it now).
+openclaw -- that's where the agent lives.
+
+Golden rule: every openclaw command needs this prefix:
+sudo -iu openclaw openclaw [command]
+
+If you run bare 'openclaw' as root, it creates a SECOND config
+with a different token and you'll get weird errors later. Don't
+do that. Always use the prefix."
+```
+
+### Stage 2: Prepare the Server (1:48 - 1:55)
+
+**Stage 2.1: Add Swap Memory**
+
+```
+"Your server has 2 GB of RAM. We're going to add 2 GB of swap
+space so it doesn't crash when the AI model is thinking hard.
+Run these commands one at a time:"
+```
+
+```bash
+fallocate -l 2G /swapfile
+chmod 600 /swapfile
+mkswap /swapfile
+swapon /swapfile
+echo '/swapfile none swap sw 0 0' >> /etc/fstab
+```
+
+Verify: `free -h` -- they should see a "Swap" row showing 2.0G.
+
+**Stage 2.2: Update OpenClaw**
+
+```
+"Now let's make sure we're on the latest version."
+```
+
+```bash
+sudo npm i -g openclaw@latest
+```
+
+*Why npm? The DigitalOcean image installs via npm. Running `openclaw update` returns "SKIPPED: not-git-install."*
+
+Verify: `sudo -iu openclaw openclaw --version` -- should show v2026.3.x or newer.
+
+Then restart: `sudo systemctl restart openclaw`
+
+### Stage 3: Onboard Wizard (1:55 - 2:08)
 
 ```bash
 sudo -iu openclaw openclaw onboard
 ```
 
-Walk through each screen of the wizard together. Wait for everyone at each step.
+Walk through each screen of the wizard together. Wait for everyone at each step:
 
-**Agent Name:** "Pick something that feels right. It can be anything. Aria. Scout. Atlas. Nova. Luna. Sage. Whatever speaks to you."
+1. **QuickStart vs Advanced** -- Choose **QuickStart**
+2. **Model / Auth** -- Select Anthropic / Claude, paste API key
+3. **Workspace** -- Accept the default
+4. **Gateway** -- Defaults are fine (token auto-generated)
+5. **Channels** -- Skip for now (we'll do Telegram next)
+6. **Daemon** -- Install the systemd service
+7. **Health check** -- Verifies gateway starts
 
-**API Key:** "Paste your OpenRouter key here. Carefully -- no extra spaces."
+**Verify together:**
+```bash
+sudo -iu openclaw openclaw health
+sudo -iu openclaw openclaw config validate --json
+```
 
-**Telegram Bot:** If anyone hasn't set up their Telegram bot yet, do it now as a group side quest:
+Green checks or passing status. A Telegram warning is expected (we haven't set it up yet).
+
+### Stage 4: Connect Telegram (2:08 - 2:18)
+
+**Telegram Bot Setup** (if anyone hasn't done this yet, do it now as a group side quest):
 1. Open Telegram
 2. Search @BotFather
 3. Send /newbot
-4. Follow the prompts
+4. Pick a name and username (must end in "bot")
+5. Copy the token BotFather gives you
 
-**Model Selection:** "Go with Claude Sonnet. Best quality-to-cost ratio for agent use."
-
-### Step 3: Dashboard Connection (2:05 - 2:15)
-
-```
-"Now open your browser -- Chrome, Safari, whatever you use.
-In the address bar, type: https://[THEIR IP ADDRESS]
-
-You'll see a security warning. That's normal -- click through it."
-```
-
-Walk through the pairing flow:
-1. Enter gateway URL and token
-2. Click Connect (will say "pairing required")
-3. Back to terminal: `sudo -iu openclaw openclaw devices approve --latest`
-4. Back to browser: Click Connect again
-
-> **WIN MOMENT:** When the dashboard loads. "THERE IT IS. That's your agent's control center."
-
-> **CELEBRATE:** "Say hi to your agent. Type 'Hey, are you alive?' and press Enter."
-
-### Step 4: Pair Phone + Telegram (2:15 - 2:25)
-
-Open Telegram, find their bot, send it a message.
-
-If it doesn't respond:
-1. Back to terminal: `sudo -iu openclaw openclaw devices approve --latest`
-2. Try messaging again
-
-> **MASSIVE WIN MOMENT:** When they get a response from their agent on their PHONE. This is the biggest moment of the day. Celebrate it. "Your agent is alive. On your phone. Working for you. Let that sink in for a second."
-
-### Step 5: Customize Workspace (2:25 - 2:40)
-
-```
-"Now let's make it YOURS. Flip to the templates in your
-Participant Resources. We're going to fill these in and paste
-them into your workspace."
-```
-
-Have them write their IDENTITY.md and USER.md using the templates. Give them 10 minutes to write, then paste:
-
+**Connect to OpenClaw:**
 ```bash
-sudo -iu openclaw nano /home/openclaw/.openclaw/workspace/IDENTITY.md
-```
+# Configure the Telegram channel
+sudo -iu openclaw openclaw configure --section channels
+# Select Telegram, paste your bot token
 
-Nano walkthrough: "Just type to edit. Ctrl+O, Enter to save. Ctrl+X to exit."
+# Set your Telegram user ID (message @userinfobot to find it)
+sudo -iu openclaw openclaw configure --section telegram-dm
 
-> **Mention the template packs:** "We have pre-built template packs for different agent types -- brand strategist, market intelligence, investment analyst. We'll dive deep into these in Session 5 after the security session."
-
-### Step 6: First Heartbeat (2:40 - 2:45)
-
-Set up a basic heartbeat. Keep it simple for now -- just the 5-line starter from the curriculum.
-
-Quick verification:
-```bash
+# Restart
 sudo systemctl restart openclaw
 ```
 
-Then test: send a message through Telegram.
+**Verify:** Open Telegram, find the bot, send "Hey! Are you alive?"
+
+> **MASSIVE WIN MOMENT:** When they get a response from their agent on their PHONE. This is the biggest moment of the day. Celebrate it. "Your agent is alive. On your phone. Working for you. Let that sink in for a second."
+
+### Stage 5: Install Config Templates (2:18 - 2:25)
+
+```
+"Instead of manually editing files, we're going to let your
+agent install its own configuration. Send this message to
+your agent in Telegram:"
+```
+
+Have them send the install prompt from the end-to-end guide (Stage 5). The agent will:
+1. Clone the template repo
+2. Copy SOUL.md, MEMORY.md, AGENTS.md, HEARTBEAT.md, IDENTITY.md to workspace
+3. Copy skills folder
+4. Create memory directories
+
+**Verify:**
+```bash
+sudo systemctl restart openclaw
+sudo -iu openclaw ls /home/openclaw/.openclaw/workspace/
+```
+
+They should see: AGENTS.md, HEARTBEAT.md, IDENTITY.md, MEMORY.md, SOUL.md, memory/, skills/
+
+### Stage 6: Load the Command Center (2:25 - 2:33)
+
+```
+"Now let's give your agent YOUR context. Paste your Command
+Center document to your agent in Telegram."
+```
+
+They send: "I'm pasting my AI Command Center. Read everything and update MEMORY.md with my information. Then confirm what you learned about me." + their document.
+
+**Verify:** Have them ask: "What do you know about me and my business?" The agent should respond with details from their Command Center.
+
+> **KEY MOMENT:** When the agent summarizes their business back to them accurately. "See that? It KNOWS you now. That's the power of context."
+
+### Stage 7: Access Methods (2:33 - 2:45)
+
+**Stage 7.1: Telegram** -- Already working from Stage 4.
+
+**Stage 7.2: TUI (Terminal Chat)**
+```bash
+sudo -iu openclaw openclaw tui --deliver
+```
+Quick demo: send a message, get a response, Ctrl+C to exit.
+
+**Stage 7.3: Gateway Config + Dashboard**
+
+```
+"Last thing -- let's get the web dashboard working. This is
+the visual command center."
+```
+
+First, configure the gateway for browser access:
+```bash
+sudo -iu openclaw openclaw config set gateway.controlUi.allowedOrigins '["*"]'
+sudo -iu openclaw openclaw config set gateway.trustedProxies '["127.0.0.1", "::1"]'
+```
+
+**Install the gateway keep-alive wrapper** (this is the DigitalOcean bug fix -- the gateway can silently stop):
+```bash
+# Create the wrapper script (full script in end-to-end guide Stage 7.3)
+sudo tee /opt/openclaw-start.sh > /dev/null << 'SCRIPT'
+#!/bin/bash
+cleanup() { kill $GATEWAY_PID 2>/dev/null; exit 0; }
+trap cleanup SIGTERM SIGINT
+while true; do
+    pkill -9 -f 'openclaw-gateway' 2>/dev/null
+    sleep 2
+    /usr/bin/openclaw gateway --port 18789 --allow-unconfigured &
+    GATEWAY_PID=$!
+    for i in $(seq 1 60); do
+        if ss -tlnp | grep -q ':18789'; then break; fi
+        sleep 1
+    done
+    if ! ss -tlnp | grep -q ':18789'; then continue; fi
+    while kill -0 $GATEWAY_PID 2>/dev/null && ss -tlnp | grep -q ':18789'; do
+        sleep 10
+    done
+    sleep 5
+done
+SCRIPT
+sudo chmod +x /opt/openclaw-start.sh
+```
+
+Update the systemd service:
+```bash
+sudo tee /etc/systemd/system/openclaw.service > /dev/null << 'SERVICE'
+[Unit]
+Description=OpenClaw Gateway
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/openclaw-start.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+SERVICE
+sudo systemctl daemon-reload
+sudo systemctl restart openclaw
+```
+
+```
+"What this does: it monitors your gateway every 10 seconds.
+If it dies silently -- which happens on DigitalOcean -- it
+auto-restarts. No more 'my bot stopped responding' mystery."
+```
+
+**Open the dashboard:**
+- Browser: `https://[THEIR IP ADDRESS]`
+- Click through SSL warning
+- Paste gateway token
+- Device pairing: Connect → SSH approve → Connect again
+
+Get the gateway token:
+```bash
+sudo -iu openclaw cat ~/.openclaw/openclaw.json | grep -o '"token":"[^"]*"' | head -1
+```
+
+**Verify:** Send a message through at least two channels (Telegram + Dashboard or TUI).
+
+> **WIN MOMENT:** "Same agent, same personality, three different ways to reach it. Your AI Command Center is live."
+
+**Fallback:** If HTTPS dashboard doesn't work, use SSH tunnel:
+```bash
+ssh -N -L 18789:127.0.0.1:18789 root@YOUR_IP
+# Then visit: http://localhost:18789
+```
 
 ### Session 3 Troubleshooting
 
 | Issue | Fix |
 |-------|-----|
 | SSH password not working | Double-check the IP. Try retyping slowly. Characters don't show. |
+| Model picker prompt on login | Press Ctrl+C to skip it. |
+| Ran `openclaw` as root (no prefix) | Token mismatch. Re-run with `sudo -iu openclaw openclaw onboard` to fix. |
+| Swap already exists | Skip Stage 2.1. Run `free -h` to confirm. |
+| npm update fails | Try: `sudo npm cache clean --force` then retry. |
 | Onboard wizard crashes | Run again: `sudo -iu openclaw openclaw onboard` |
-| Dashboard won't connect | Check: `systemctl status openclaw`. If not running: `sudo systemctl start openclaw` |
-| "Pairing required" confusion | This is the most common issue. The order matters: Browser first, then SSH approve, then browser again. |
+| Telegram bot not responding | Check: `sudo systemctl status openclaw`. Restart: `sudo systemctl restart openclaw`. Approve device: `sudo -iu openclaw openclaw devices approve --latest`. |
+| Gateway silently stops | That's why we install the keep-alive wrapper (Stage 7.3). Run the wrapper setup commands from the end-to-end guide. |
+| Dashboard won't connect | Check: `systemctl status openclaw`. Verify allowedOrigins and trustedProxies are set. Try SSH tunnel as fallback. |
+| "Pairing required" confusion | The order matters: Browser first (click Connect), then SSH approve, then browser again. |
 | "No pairing request found" | They ran approve before the browser tried to connect. Go back to browser, click Connect, THEN approve. |
-| API key error | Check for extra spaces. Verify credits in OpenRouter dashboard. |
+| API key error | Check for extra spaces. Verify credits at openrouter.ai. |
 | Agent responds but personality is wrong | Restart after editing: `sudo systemctl restart openclaw` |
 | Someone is stressed about terminal | Sit next to them. Go through each step 1:1. Validate every concern. "You're right to ask that." |
 

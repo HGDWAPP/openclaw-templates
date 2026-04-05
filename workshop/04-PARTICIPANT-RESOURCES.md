@@ -225,7 +225,94 @@ some options to consider."
 
 ---
 
-# 3. TERMINAL COMMANDS CHEAT SHEET
+# 3. TERMINAL COMMANDS & DEPLOYMENT CHEAT SHEET
+
+## The Two Users (Important!)
+
+| Account | Purpose |
+|---------|---------|
+| `root` | System admin (updates, firewall, swap, systemd) |
+| `openclaw` | OpenClaw runtime (config, API keys, workspace files) |
+
+**Golden rule:** Every `openclaw` command needs this prefix:
+```bash
+sudo -iu openclaw openclaw [command]
+```
+Running bare `openclaw` as root creates a second config with a different token = weird errors later.
+
+## Deployment Stages Quick Reference
+
+| Stage | What | Key Command |
+|-------|------|-------------|
+| 1 | SSH into server | `ssh root@YOUR_IP` |
+| 2.1 | Add swap memory | `fallocate -l 2G /swapfile` (+ setup commands) |
+| 2.2 | Update OpenClaw | `sudo npm i -g openclaw@latest` |
+| 3 | Onboard wizard | `sudo -iu openclaw openclaw onboard` |
+| 4 | Connect Telegram | `sudo -iu openclaw openclaw configure --section channels` |
+| 5 | Install config templates | Send install prompt to agent via Telegram |
+| 6 | Load Command Center | Send your document to agent via Telegram |
+| 7.1 | Telegram (already done) | Send a message to your bot |
+| 7.2 | TUI (terminal chat) | `sudo -iu openclaw openclaw tui --deliver` |
+| 7.3 | Dashboard (browser) | `https://YOUR_IP` + gateway config + keep-alive wrapper |
+
+## Stage 2.1: Swap Memory Commands
+
+```bash
+fallocate -l 2G /swapfile
+chmod 600 /swapfile
+mkswap /swapfile
+swapon /swapfile
+echo '/swapfile none swap sw 0 0' >> /etc/fstab
+# Verify:
+free -h
+```
+
+## Stage 7.3: Gateway Keep-Alive Wrapper
+
+The gateway on DigitalOcean can silently stop. This wrapper monitors it every 10 seconds and auto-restarts:
+
+```bash
+# Create the wrapper (full script in end-to-end guide Stage 7.3)
+sudo tee /opt/openclaw-start.sh > /dev/null << 'SCRIPT'
+#!/bin/bash
+cleanup() { kill $GATEWAY_PID 2>/dev/null; exit 0; }
+trap cleanup SIGTERM SIGINT
+while true; do
+    pkill -9 -f 'openclaw-gateway' 2>/dev/null
+    sleep 2
+    /usr/bin/openclaw gateway --port 18789 --allow-unconfigured &
+    GATEWAY_PID=$!
+    for i in $(seq 1 60); do
+        if ss -tlnp | grep -q ':18789'; then break; fi
+        sleep 1
+    done
+    if ! ss -tlnp | grep -q ':18789'; then continue; fi
+    while kill -0 $GATEWAY_PID 2>/dev/null && ss -tlnp | grep -q ':18789'; do
+        sleep 10
+    done
+    sleep 5
+done
+SCRIPT
+sudo chmod +x /opt/openclaw-start.sh
+
+# Update the systemd service
+sudo tee /etc/systemd/system/openclaw.service > /dev/null << 'SERVICE'
+[Unit]
+Description=OpenClaw Gateway
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/openclaw-start.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+SERVICE
+sudo systemctl daemon-reload
+sudo systemctl restart openclaw
+```
 
 ## The Basics (you'll use these today)
 
@@ -247,14 +334,19 @@ some options to consider."
 |--------------------|---------|
 | Run setup wizard | `sudo -iu openclaw openclaw onboard` |
 | Check agent health | `sudo -iu openclaw openclaw health` |
-| Get gateway token | `sudo -iu openclaw openclaw config get gateway.auth.token` |
-| Get dashboard URL | `sudo -iu openclaw openclaw dashboard --no-open` |
+| Validate config | `sudo -iu openclaw openclaw config validate --json` |
+| Get gateway token | `sudo -iu openclaw cat ~/.openclaw/openclaw.json \| grep -o '"token":"[^"]*"' \| head -1` |
+| Configure Telegram | `sudo -iu openclaw openclaw configure --section channels` |
+| Set Telegram DM | `sudo -iu openclaw openclaw configure --section telegram-dm` |
+| Open TUI chat | `sudo -iu openclaw openclaw tui --deliver` |
+| Set gateway origins | `sudo -iu openclaw openclaw config set gateway.controlUi.allowedOrigins '["*"]'` |
+| Set trusted proxies | `sudo -iu openclaw openclaw config set gateway.trustedProxies '["127.0.0.1", "::1"]'` |
 | Approve device pairing | `sudo -iu openclaw openclaw devices approve --latest` |
 | List paired devices | `sudo -iu openclaw openclaw devices list` |
 | View agent logs | `sudo -iu openclaw openclaw logs` |
 | Edit workspace files | `sudo -iu openclaw nano /home/openclaw/.openclaw/workspace/FILENAME.md` |
-| Start OpenClaw | `sudo systemctl start openclaw` |
-| Stop OpenClaw | `sudo systemctl stop openclaw` |
+| List workspace files | `sudo -iu openclaw ls /home/openclaw/.openclaw/workspace/` |
+| SSH tunnel (fallback) | `ssh -N -L 18789:127.0.0.1:18789 root@YOUR_IP` then visit `http://localhost:18789` |
 
 ## Cron Job Commands
 
@@ -268,11 +360,13 @@ some options to consider."
 ## Helpful Tips
 
 - **Password doesn't show when typing:** That's a security feature, not a bug. Just type and press Enter.
+- **Model picker on login:** Press `Ctrl+C` to skip it.
 - **Copy/paste in terminal:** 
   - Mac: `Cmd+C` / `Cmd+V` works in most terminals
   - Windows: Right-click to paste in PowerShell
 - **"Command not found":** You probably have a typo. Check spelling carefully.
 - **Stuck in a program?** Try `Ctrl+C` to exit. If that doesn't work, try `Ctrl+X`.
+- **Gateway stopped responding?** The keep-alive wrapper (Stage 7.3) handles this automatically. If you haven't installed it yet, see the end-to-end guide.
 
 ---
 
