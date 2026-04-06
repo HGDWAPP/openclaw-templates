@@ -145,7 +145,7 @@ sleep 1
 # Step 4: Run the onboard wizard
 # -----------------------------------------------------------
 echo "==========================================="
-echo " Starting the onboard wizard..."
+echo " [4/7] Starting the onboard wizard..."
 echo " Follow the prompts to configure your agent."
 echo " When it finishes, the script will continue"
 echo " automatically."
