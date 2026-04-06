@@ -157,7 +157,27 @@ echo ""
 # is piped via curl, without stealing bash's script source.
 
 # Run onboard interactively
-sudo -iu openclaw openclaw onboard </dev/tty
+if ! sudo -iu openclaw openclaw onboard </dev/tty; then
+  echo ""
+  echo "==========================================="
+  echo " ERROR: Onboard wizard did not complete."
+  echo "==========================================="
+  echo ""
+  echo " The onboard wizard exited with an error."
+  echo " This can happen if you cancelled it or"
+  echo " entered invalid settings."
+  echo ""
+  echo " You can re-run it manually with:"
+  echo "   sudo -iu openclaw openclaw onboard"
+  echo ""
+  echo " Then run the fix script to finish setup:"
+  echo "   curl -sL https://raw.githubusercontent.com/HGDWAPP/openclaw-templates/main/scripts/openclaw-fix.sh | sudo bash"
+  echo ""
+  echo " Restarting gateway so your droplet isn't"
+  echo " left in a broken state..."
+  systemctl start openclaw 2>/dev/null || true
+  exit 1
+fi
 
 echo ""
 echo "==========================================="

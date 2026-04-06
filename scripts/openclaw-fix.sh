@@ -94,9 +94,35 @@ echo "  Done."
 echo ""
 
 # -----------------------------------------------------------
-# Step 6: Write correct service file
+# Step 6: Install keep-alive wrapper + write service file
+# The keep-alive wrapper monitors the gateway and auto-restarts
+# it if it dies -- so the bot stays online 24/7.
 # -----------------------------------------------------------
-echo "[6/7] Writing systemd service file..."
+echo "[6/7] Installing keep-alive wrapper + writing service file..."
+
+# Install the keep-alive wrapper script
+cat > /opt/openclaw-start.sh << 'WRAPPER'
+#!/bin/bash
+cleanup() { kill $GATEWAY_PID 2>/dev/null; exit 0; }
+trap cleanup SIGTERM SIGINT
+while true; do
+    pkill -9 -f 'openclaw-gateway' 2>/dev/null
+    sleep 2
+    /usr/bin/openclaw gateway --port 18789 --allow-unconfigured &
+    GATEWAY_PID=$!
+    for i in $(seq 1 60); do
+        if ss -tlnp | grep -q ':18789'; then break; fi
+        sleep 1
+    done
+    if ! ss -tlnp | grep -q ':18789'; then continue; fi
+    while kill -0 $GATEWAY_PID 2>/dev/null && ss -tlnp | grep -q ':18789'; do
+        sleep 10
+    done
+    sleep 5
+done
+WRAPPER
+chmod +x /opt/openclaw-start.sh
+
 cat > /etc/systemd/system/openclaw.service << 'SVC'
 [Unit]
 Description=Openclaw Gateway Service
@@ -112,12 +138,9 @@ EnvironmentFile=/opt/openclaw.env
 Environment=HOME=/home/openclaw
 Environment=NODE_ENV=production
 Environment=PATH=/home/openclaw/.openclaw/workspace/npm/bin:/home/openclaw/.openclaw/workspace/homebrew/bin:/usr/local/bin:/usr/bin:/bin
-
-ExecStart=/usr/bin/openclaw gateway --port 18789
-ExecStop=/bin/kill -TERM $MAINPID
-
-Restart=on-failure
-RestartSec=10
+ExecStart=/opt/openclaw-start.sh
+Restart=always
+RestartSec=5
 StandardOutput=journal
 StandardError=journal
 LimitNOFILE=65536
@@ -126,7 +149,8 @@ LimitNOFILE=65536
 WantedBy=multi-user.target
 SVC
 systemctl daemon-reload
-echo "  Done."
+echo "  Keep-alive wrapper: installed"
+echo "  Service file: User=openclaw, auto-restart"
 echo ""
 
 # -----------------------------------------------------------
