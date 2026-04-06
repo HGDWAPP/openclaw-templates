@@ -341,7 +341,9 @@ sudo -iu openclaw cat ~/.openclaw/openclaw.json | grep -o '"token":"[^"]*"' | he
 ```bash
 # Extract the correct token from openclaw.json and sync it to the env file
 NEW_TOKEN=$(sudo -iu openclaw python3 -c "import json; print(json.load(open('/home/openclaw/.openclaw/openclaw.json'))['gateway']['auth']['token'])")
-sudo sed -i "s|OPENCLAW_GATEWAY_TOKEN=.*|OPENCLAW_GATEWAY_TOKEN=$NEW_TOKEN|" /opt/openclaw.env
+sudo grep -v '^OPENCLAW_GATEWAY_TOKEN=' /opt/openclaw.env > /tmp/oc-env.tmp
+echo "OPENCLAW_GATEWAY_TOKEN=$NEW_TOKEN" | sudo tee -a /tmp/oc-env.tmp > /dev/null
+sudo mv /tmp/oc-env.tmp /opt/openclaw.env
 sudo sed -i 's/OPENCLAW_GATEWAY_BIND=lan/OPENCLAW_GATEWAY_BIND=loopback/' /opt/openclaw.env
 sudo systemctl restart openclaw
 
@@ -1083,7 +1085,9 @@ If they're different, that's your problem.
 
 ```bash
 NEW_TOKEN=$(sudo -iu openclaw python3 -c "import json; print(json.load(open('/home/openclaw/.openclaw/openclaw.json'))['gateway']['auth']['token'])")
-sudo sed -i "s|OPENCLAW_GATEWAY_TOKEN=.*|OPENCLAW_GATEWAY_TOKEN=$NEW_TOKEN|" /opt/openclaw.env
+sudo grep -v '^OPENCLAW_GATEWAY_TOKEN=' /opt/openclaw.env > /tmp/oc-env.tmp
+echo "OPENCLAW_GATEWAY_TOKEN=$NEW_TOKEN" | sudo tee -a /tmp/oc-env.tmp > /dev/null
+sudo mv /tmp/oc-env.tmp /opt/openclaw.env
 sudo systemctl restart openclaw
 ```
 
@@ -1126,7 +1130,9 @@ openclaw config set gateway.auth.token YOUR_TOKEN
 openclaw config set gateway.remote.token YOUR_TOKEN
 
 # 3. Also sync the env file
-sudo sed -i "s|OPENCLAW_GATEWAY_TOKEN=.*|OPENCLAW_GATEWAY_TOKEN=YOUR_TOKEN|" /opt/openclaw.env
+sudo grep -v '^OPENCLAW_GATEWAY_TOKEN=' /opt/openclaw.env > /tmp/oc-env.tmp
+echo "OPENCLAW_GATEWAY_TOKEN=YOUR_TOKEN" | sudo tee -a /tmp/oc-env.tmp > /dev/null
+sudo mv /tmp/oc-env.tmp /opt/openclaw.env
 
 # 4. Restart the service
 sudo systemctl restart openclaw
