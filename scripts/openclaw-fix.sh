@@ -77,7 +77,7 @@ echo ""
 # Step 3: Set gateway.mode=local
 # -----------------------------------------------------------
 echo "[3/7] Setting gateway.mode=local..."
-sudo -iu openclaw openclaw config set gateway.mode local 2>&1 | tail -1
+sudo -iu openclaw openclaw config set gateway.mode local 2>&1 | tail -1 || true
 echo ""
 
 # -----------------------------------------------------------
@@ -85,9 +85,9 @@ echo ""
 # -----------------------------------------------------------
 echo "[4/7] Configuring browser access..."
 sudo -iu openclaw openclaw config set \
-  gateway.controlUi.allowedOrigins '["*"]' 2>&1 | tail -1
+  gateway.controlUi.allowedOrigins '["*"]' 2>&1 | tail -1 || true
 sudo -iu openclaw openclaw config set \
-  gateway.trustedProxies '["127.0.0.1", "::1"]' 2>&1 | tail -1
+  gateway.trustedProxies '["127.0.0.1", "::1"]' 2>&1 | tail -1 || true
 echo ""
 
 # -----------------------------------------------------------

@@ -130,7 +130,7 @@ echo ""
 # Step 3: Update OpenClaw
 # -----------------------------------------------------------
 echo "[3/7] Updating OpenClaw..."
-npm i -g openclaw@latest 2>&1 | tail -3
+npm i -g openclaw@latest 2>&1 | tail -3 || echo "  WARNING: npm update failed. Continuing with existing version."
 echo ""
 echo "  Version: $(sudo -iu openclaw openclaw --version 2>/dev/null || echo 'unknown')"
 echo ""
@@ -236,13 +236,13 @@ else
 fi
 
 # Set gateway mode
-sudo -iu openclaw openclaw config set gateway.mode local 2>&1 | tail -1
+sudo -iu openclaw openclaw config set gateway.mode local 2>&1 | tail -1 || true
 
 # Configure browser access for dashboard
 sudo -iu openclaw openclaw config set \
-  gateway.controlUi.allowedOrigins '["*"]' 2>&1 | tail -1
+  gateway.controlUi.allowedOrigins '["*"]' 2>&1 | tail -1 || true
 sudo -iu openclaw openclaw config set \
-  gateway.trustedProxies '["127.0.0.1", "::1"]' 2>&1 | tail -1
+  gateway.trustedProxies '["127.0.0.1", "::1"]' 2>&1 | tail -1 || true
 
 # Fix file ownership (onboard may have created root-owned files)
 chown -R openclaw:openclaw /home/openclaw/.openclaw/
