@@ -415,7 +415,7 @@ WorkingDirectory=/home/openclaw
 EnvironmentFile=/opt/openclaw.env
 Environment="HOME=/home/openclaw"
 Environment="NODE_ENV=production"
-Environment="PATH=/home/openclaw/.openclaw/workspace/npm/bin:/home/openclaw/.openclaw/workspace/homebrew/bin:/usr/local/bin:/usr/bin:/bin:"
+Environment="PATH=/home/openclaw/.openclaw/workspace/npm/bin:/home/openclaw/.openclaw/workspace/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
 ExecStart=/opt/openclaw-start.sh
 Restart=always
 RestartSec=5
