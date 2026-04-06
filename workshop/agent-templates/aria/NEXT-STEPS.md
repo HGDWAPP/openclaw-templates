@@ -53,7 +53,7 @@ Aria gets dramatically better with each tool you connect. Without Brave Search, 
 Content agents burn more tokens than most — drafting, revising, and research all add up. Keep costs reasonable without killing quality.
 
 **Quick wins:**
-- Set heartbeat to 60 min instead of 30 (saves ~50%% on heartbeat costs)
+- Set heartbeat to 60 min instead of 30 (saves ~50% on heartbeat costs)
 - Use isolated sessions for content scans and research (keeps main chat context small)
 - Be specific — *"Draft a LinkedIn post about our product launch using the hook format from my voice samples"* costs less and produces better results than *"Write me something for LinkedIn"*
 - Keep MEMORY.md under 200 lines — Aria reads it every session start

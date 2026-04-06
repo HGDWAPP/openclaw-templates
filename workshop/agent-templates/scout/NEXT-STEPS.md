@@ -53,7 +53,7 @@ Scout's market intelligence loop depends on external data. Without Brave Search,
 Market intelligence agents can burn tokens fast — scanning, scoring, and deep research add up. Keep costs reasonable without missing opportunities.
 
 **Quick wins:**
-- Set heartbeat to 60 min instead of 30 (saves ~50%% on heartbeat costs)
+- Set heartbeat to 60 min instead of 30 (saves ~50% on heartbeat costs)
 - Use isolated sessions for market scans and competitor research (keeps main chat context small)
 - Be specific — *"Find Series A B2B SaaS companies in fintech that launched in the last 90 days"* costs less and returns better results than *"Find me leads"*
 - Keep MEMORY.md under 200 lines — Scout reads it every session start
@@ -122,7 +122,7 @@ Market intelligence agents can burn tokens fast — scanning, scoring, and deep 
 
 **Build a pipeline tracker.** Create knowledge/pipeline.md with your current deals: company name, stage, deal size, next step, close date, risk factors. Scout monitors these and flags when deals stall, competitors enter, or new intel surfaces.
 
-**Set up lead scoring criteria.** Tell Scout your scoring framework in chat or add it to knowledge/icp.md. Example: team quality (30%%), market timing (25%%), product-market fit (25%%), competitive position (20%%). Scout applies this consistently to every opportunity.
+**Set up lead scoring criteria.** Tell Scout your scoring framework in chat or add it to knowledge/icp.md. Example: team quality (30%), market timing (25%), product-market fit (25%), competitive position (20%). Scout applies this consistently to every opportunity.
 
 **Create market segment tracking.** Add knowledge/market-map.md with the segments you care about — which are growing, shrinking, converging. Scout watches for shifts and flags when a segment you're in (or watching) changes trajectory.
 

@@ -53,7 +53,7 @@ Atlas's intelligence loop depends on external data. Without Brave Search, the en
 Investment analysis agents can burn tokens fast — deep research, scoring, and market scanning add up. Keep costs reasonable without missing deals.
 
 **Quick wins:**
-- Set heartbeat to 60 min instead of 30 (saves ~50%% on heartbeat costs)
+- Set heartbeat to 60 min instead of 30 (saves ~50% on heartbeat costs)
 - Use isolated sessions for signal scans and market research (keeps main chat context small)
 - Be specific — *"Find pre-seed AI infrastructure companies that launched in the last 90 days with technical founders"* costs less and returns better results than *"Find me deals"*
 - Keep MEMORY.md under 200 lines — Atlas reads it every session start
