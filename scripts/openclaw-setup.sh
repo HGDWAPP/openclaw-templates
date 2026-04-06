@@ -195,12 +195,15 @@ echo "  This sets your Telegram user ID so only YOU"
 echo "  can message the bot. If you don't have your"
 echo "  user ID, message @userinfobot on Telegram."
 echo ""
-echo "  (If you want to skip this, press Ctrl+C and"
-echo "  you can run it later with:"
+echo "  (If you want to skip this, just press Enter"
+echo "  through the prompts, or close the terminal and"
+echo "  run it later with:"
 echo "    sudo -iu openclaw openclaw configure --section telegram-dm)"
 echo ""
 
+trap '' INT
 sudo -iu openclaw openclaw configure --section telegram-dm </dev/tty || true
+trap - INT
 
 echo ""
 echo "==========================================="
@@ -276,7 +279,7 @@ fi
 # Health check
 echo ""
 echo "  Running health check..."
-sudo -iu openclaw openclaw health 2>&1 | head -5
+sudo -iu openclaw openclaw health 2>&1 | head -5 || true
 echo ""
 
 DROPLET_IP=$(hostname -I | awk '{print $1}')

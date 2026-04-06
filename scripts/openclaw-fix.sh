@@ -62,7 +62,7 @@ rm "${ENV}.tmp"
 sed -i 's/OPENCLAW_GATEWAY_BIND=lan/OPENCLAW_GATEWAY_BIND=loopback/' "$ENV"
 
 # Verify
-ENV_TOKEN=$(grep OPENCLAW_GATEWAY_TOKEN "$ENV" | cut -d= -f2-)
+ENV_TOKEN=$(grep "^OPENCLAW_GATEWAY_TOKEN=" "$ENV" | cut -d= -f2-)
 if [ "$TOKEN" = "$ENV_TOKEN" ]; then
   echo "  Tokens match: $TOKEN"
 else
@@ -187,7 +187,7 @@ fi
 # Run health check
 echo ""
 echo "  Running health check..."
-sudo -iu openclaw openclaw health 2>&1 | head -5
+sudo -iu openclaw openclaw health 2>&1 | head -5 || true
 echo ""
 
 # Final summary
