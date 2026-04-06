@@ -152,12 +152,12 @@ echo " automatically."
 echo "==========================================="
 echo ""
 
-# Reconnect stdin to the terminal so the onboard wizard can
-# read interactive input even when this script is piped via curl.
-exec </dev/tty
+# Redirect stdin to the terminal for the onboard wizard only,
+# so the wizard can read interactive input even when this script
+# is piped via curl, without stealing bash's script source.
 
 # Run onboard interactively
-sudo -iu openclaw openclaw onboard
+sudo -iu openclaw openclaw onboard </dev/tty
 
 echo ""
 echo "==========================================="
@@ -180,7 +180,7 @@ echo "  you can run it later with:"
 echo "    sudo -iu openclaw openclaw configure --section telegram-dm)"
 echo ""
 
-sudo -iu openclaw openclaw configure --section telegram-dm || true
+sudo -iu openclaw openclaw configure --section telegram-dm </dev/tty || true
 
 echo ""
 echo "==========================================="
