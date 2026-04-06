@@ -61,7 +61,7 @@ while true; do
         if ss -tlnp | grep -q ':18789'; then break; fi
         sleep 1
     done
-    if ! ss -tlnp | grep -q ':18789'; then continue; fi
+    if ! ss -tlnp | grep -q ':18789'; then kill $GATEWAY_PID 2>/dev/null; wait $GATEWAY_PID 2>/dev/null; continue; fi
     while kill -0 $GATEWAY_PID 2>/dev/null && ss -tlnp | grep -q ':18789'; do
         sleep 10
     done
