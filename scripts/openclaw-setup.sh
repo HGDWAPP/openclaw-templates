@@ -4,16 +4,17 @@
 # Run this ONCE on a fresh 1-Click droplet, BEFORE onboarding.
 #
 # What it does:
-#   1. Pre-fixes the service file (User=openclaw, no Docker dep)
-#      so the crash loop NEVER happens
-#   2. Fixes bind setting (lan → loopback)
+#   1. Pre-fixes the service file (User=openclaw, keep-alive
+#      wrapper) so the crash loop NEVER happens
+#   2. Fixes bind setting (lan -> loopback)
 #   3. Adds swap memory if missing
 #   4. Updates OpenClaw to latest
 #   5. Launches the onboard wizard (interactive)
-#   6. After onboard completes, auto-syncs the gateway token
-#   7. Configures browser access for the dashboard
-#   8. Fixes file ownership
-#   9. Restarts and verifies everything
+#   6. Configures Telegram DM pairing (interactive)
+#   7. Auto-syncs the gateway token
+#   8. Configures browser access for the dashboard
+#   9. Fixes file ownership
+#  10. Restarts and verifies everything
 #
 # Usage:
 #   curl -sL https://raw.githubusercontent.com/HGDWAPP/openclaw-templates/main/scripts/openclaw-setup.sh | sudo bash
@@ -36,13 +37,40 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 # -----------------------------------------------------------
-# Step 1: Pre-fix the service file
+# Step 1: Pre-fix the service file + install keep-alive wrapper
 # This prevents the crash loop from EVER happening.
 # The 1-Click image ships with User=root, but the config
 # lives under /home/openclaw. Fixing this BEFORE onboarding
 # means the gateway never crashes.
+# The keep-alive wrapper monitors the gateway and auto-restarts
+# it if it dies -- so the bot stays online 24/7.
 # -----------------------------------------------------------
-echo "[1/6] Pre-fixing service file..."
+echo "[1/7] Pre-fixing service file + installing keep-alive wrapper..."
+
+# Install the keep-alive wrapper script
+cat > /opt/openclaw-start.sh << 'WRAPPER'
+#!/bin/bash
+cleanup() { kill $GATEWAY_PID 2>/dev/null; exit 0; }
+trap cleanup SIGTERM SIGINT
+while true; do
+    pkill -9 -f 'openclaw-gateway' 2>/dev/null
+    sleep 2
+    /usr/bin/openclaw gateway --port 18789 --allow-unconfigured &
+    GATEWAY_PID=$!
+    for i in $(seq 1 60); do
+        if ss -tlnp | grep -q ':18789'; then break; fi
+        sleep 1
+    done
+    if ! ss -tlnp | grep -q ':18789'; then continue; fi
+    while kill -0 $GATEWAY_PID 2>/dev/null && ss -tlnp | grep -q ':18789'; do
+        sleep 10
+    done
+    sleep 5
+done
+WRAPPER
+chmod +x /opt/openclaw-start.sh
+
+# Write the service file with User=openclaw and keep-alive wrapper
 cat > /etc/systemd/system/openclaw.service << 'SVC'
 [Unit]
 Description=Openclaw Gateway Service
@@ -58,9 +86,9 @@ EnvironmentFile=/opt/openclaw.env
 Environment=HOME=/home/openclaw
 Environment=NODE_ENV=production
 Environment=PATH=/home/openclaw/.openclaw/workspace/npm/bin:/home/openclaw/.openclaw/workspace/homebrew/bin:/usr/local/bin:/usr/bin:/bin
-ExecStart=/usr/bin/openclaw gateway --port 18789
-Restart=on-failure
-RestartSec=10
+ExecStart=/opt/openclaw-start.sh
+Restart=always
+RestartSec=5
 StandardOutput=journal
 StandardError=journal
 LimitNOFILE=65536
@@ -76,13 +104,14 @@ if [ -f /opt/openclaw.env ]; then
 fi
 
 echo "  Service file: User=openclaw (crash loop prevented)"
+echo "  Keep-alive wrapper: installed (auto-restarts gateway)"
 echo "  Bind setting: loopback"
 echo ""
 
 # -----------------------------------------------------------
 # Step 2: Add swap memory (if not already present)
 # -----------------------------------------------------------
-echo "[2/6] Checking swap memory..."
+echo "[2/7] Checking swap memory..."
 if ! swapon --show | grep -q '/swapfile'; then
   fallocate -l 2G /swapfile
   chmod 600 /swapfile
@@ -100,7 +129,7 @@ echo ""
 # -----------------------------------------------------------
 # Step 3: Update OpenClaw
 # -----------------------------------------------------------
-echo "[3/6] Updating OpenClaw..."
+echo "[3/7] Updating OpenClaw..."
 npm i -g openclaw@latest 2>&1 | tail -3
 echo ""
 echo "  Version: $(sudo -iu openclaw openclaw --version 2>/dev/null || echo 'unknown')"
@@ -119,7 +148,7 @@ echo "==========================================="
 echo " Starting the onboard wizard..."
 echo " Follow the prompts to configure your agent."
 echo " When it finishes, the script will continue"
-echo " automatically to sync your token."
+echo " automatically."
 echo "==========================================="
 echo ""
 
@@ -132,14 +161,37 @@ sudo -iu openclaw openclaw onboard
 
 echo ""
 echo "==========================================="
-echo " Onboard complete! Applying final fixes..."
+echo " Onboard complete! Setting up DM pairing..."
 echo "==========================================="
 echo ""
 
 # -----------------------------------------------------------
-# Step 5: Sync token + configure gateway
+# Step 5: Configure Telegram DM pairing
+# This ensures only YOU can message the bot.
 # -----------------------------------------------------------
-echo "[5/6] Syncing gateway token and configuring..."
+echo "[5/7] Configuring Telegram DM pairing..."
+echo ""
+echo "  This sets your Telegram user ID so only YOU"
+echo "  can message the bot. If you don't have your"
+echo "  user ID, message @userinfobot on Telegram."
+echo ""
+echo "  (If you want to skip this, press Ctrl+C and"
+echo "  you can run it later with:"
+echo "    sudo -iu openclaw openclaw configure --section telegram-dm)"
+echo ""
+
+sudo -iu openclaw openclaw configure --section telegram-dm || true
+
+echo ""
+echo "==========================================="
+echo " Applying final fixes..."
+echo "==========================================="
+echo ""
+
+# -----------------------------------------------------------
+# Step 6: Sync token + configure gateway
+# -----------------------------------------------------------
+echo "[6/7] Syncing gateway token and configuring..."
 
 CONF="/home/openclaw/.openclaw/openclaw.json"
 ENV="/opt/openclaw.env"
@@ -176,9 +228,9 @@ chown -R openclaw:openclaw /tmp/openclaw* 2>/dev/null || true
 echo ""
 
 # -----------------------------------------------------------
-# Step 6: Start and verify
+# Step 7: Start and verify
 # -----------------------------------------------------------
-echo "[6/6] Starting gateway..."
+echo "[7/7] Starting gateway..."
 systemctl start openclaw
 echo "  Waiting 30s for gateway to initialize..."
 sleep 30
@@ -207,28 +259,62 @@ echo "  Running health check..."
 sudo -iu openclaw openclaw health 2>&1 | head -5
 echo ""
 
+DROPLET_IP=$(hostname -I | awk '{print $1}')
+
 if [ "$PASS" = true ]; then
   echo "==========================================="
   echo " SETUP COMPLETE"
   echo "==========================================="
   echo ""
+  echo " Your gateway is running and healthy."
+  echo ""
   echo " Gateway token: ${TOKEN:-unknown}"
   echo " Gateway port:  18789"
-  echo " Gateway bind:  loopback (localhost only)"
   echo " Service user:  openclaw"
-  echo " Dashboard:     https://$(hostname -I | awk '{print $1}')"
+  echo " Keep-alive:    enabled (auto-restarts)"
   echo ""
-  echo " To get your dashboard token anytime:"
-  echo "   sudo -iu openclaw openclaw dashboard"
+  echo "==========================================="
+  echo " NEXT STEPS -- follow these in order"
+  echo "==========================================="
   echo ""
-  echo " To check status:"
-  echo "   sudo -iu openclaw openclaw health"
-  echo "   systemctl status openclaw"
+  echo " 1. TEST TELEGRAM"
+  echo "    Open Telegram on your phone."
+  echo "    Find your bot and send: Hey! Are you alive?"
+  echo "    It should respond within 30 seconds."
   echo ""
-  echo " Next steps:"
-  echo "   1. Open https://$(hostname -I | awk '{print $1}') in your browser"
-  echo "   2. Accept the certificate warning"
-  echo "   3. Paste your gateway token when prompted"
+  echo " 2. TRY THE TUI (optional -- test from terminal)"
+  echo "    Run this command on the server:"
+  echo "      sudo -iu openclaw openclaw tui --deliver"
+  echo "    Type a message, press Enter. Press Ctrl+C to exit."
+  echo ""
+  echo " 3. CONNECT THE WEB DASHBOARD"
+  echo "    a. On your MacBook, open your browser"
+  echo "    b. Go to: https://${DROPLET_IP}"
+  echo "    c. You will see an SSL warning -- click through it:"
+  echo "       Chrome: Advanced -> Proceed to ${DROPLET_IP} (unsafe)"
+  echo "       Safari: Show Details -> visit this website"
+  echo "    d. You will see the Gateway Dashboard connection screen"
+  echo "    e. Gateway Token: paste this ->  ${TOKEN:-unknown}"
+  echo "    f. Click Connect"
+  echo ""
+  echo " 4. APPROVE DEVICE PAIRING (first time only)"
+  echo "    After clicking Connect, you will see 'pairing required'."
+  echo "    That is normal! Come back to this terminal and run:"
+  echo "      sudo -iu openclaw openclaw devices approve --latest"
+  echo "    Then go back to your browser and click Connect again."
+  echo "    The dashboard will load."
+  echo ""
+  echo "    NOTE: The order matters!"
+  echo "    Browser Connect FIRST -> SSH approve -> Browser Connect again"
+  echo "    If you see 'No pairing request found', you ran approve"
+  echo "    before clicking Connect. Just click Connect in the"
+  echo "    browser first, then approve, then Connect again."
+  echo ""
+  echo " USEFUL COMMANDS:"
+  echo "   Get your token:  sudo -iu openclaw openclaw dashboard"
+  echo "   Health check:    sudo -iu openclaw openclaw health"
+  echo "   Service status:  systemctl status openclaw"
+  echo "   View logs:       journalctl -u openclaw -f"
   echo "==========================================="
 else
   echo "==========================================="
