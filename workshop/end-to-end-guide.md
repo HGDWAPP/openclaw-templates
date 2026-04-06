@@ -334,29 +334,70 @@ sudo -iu openclaw cat ~/.openclaw/openclaw.json | grep -o '"token":"[^"]*"' | he
 
 > **What do these do?** Your droplet uses Caddy as a reverse proxy between your browser and the gateway. The first command lets the gateway accept browser connections. The second tells it to trust Caddy. Without these, you'll get "origin not allowed" or "token mismatch" errors.
 
+#### Sync the Gateway Token (Required on 1-Click Droplets)
+
+> **⚠️ This step prevents the #1 gateway issue.** The 1-Click image ships with a pre-generated token in `/opt/openclaw.env`. The onboarding wizard generates a **new** token in `openclaw.json` but does NOT update the env file. Without this sync, every dashboard and TUI connection fails with `unauthorized: gateway token mismatch`.
+
+```bash
+# Extract the correct token from openclaw.json and sync it to the env file
+NEW_TOKEN=$(sudo -iu openclaw python3 -c "import json; print(json.load(open('/home/openclaw/.openclaw/openclaw.json'))['gateway']['auth']['token'])")
+sudo grep -v '^OPENCLAW_GATEWAY_TOKEN=' /opt/openclaw.env > /tmp/oc-env.tmp
+echo "OPENCLAW_GATEWAY_TOKEN=$NEW_TOKEN" | sudo tee -a /tmp/oc-env.tmp > /dev/null
+sudo mv /tmp/oc-env.tmp /opt/openclaw.env
+sudo sed -i 's/OPENCLAW_GATEWAY_BIND=lan/OPENCLAW_GATEWAY_BIND=loopback/' /opt/openclaw.env
+sudo systemctl restart openclaw
+
+# Verify the tokens match
+echo "openclaw.json token: $NEW_TOKEN"
+echo "env file token:      $(grep OPENCLAW_GATEWAY_TOKEN /opt/openclaw.env | cut -d= -f2)"
+```
+
+Both tokens should be identical. If they are, the gateway will accept connections.
+
 #### Keep the Gateway Alive (Important)
 
 OpenClaw's gateway can stop unexpectedly due to its internal process management. Install this wrapper script to auto-restart it:
 
 ```bash
-# Create the wrapper script
+# Create the auto-recovery wrapper script
 sudo tee /opt/openclaw-start.sh > /dev/null << 'SCRIPT'
 #!/bin/bash
+# OpenClaw Gateway Auto-Recovery Wrapper
+# Monitors the gateway process and auto-restarts if it dies or stops listening.
+
 cleanup() { kill $GATEWAY_PID 2>/dev/null; exit 0; }
 trap cleanup SIGTERM SIGINT
+
 while true; do
-    pkill -9 -f 'openclaw-gateway' 2>/dev/null
+    # Kill any orphaned gateway processes
+    pkill -9 -f "openclaw-gateway" 2>/dev/null
     sleep 2
+
+    # Start the gateway
     /usr/bin/openclaw gateway --port 18789 --allow-unconfigured &
     GATEWAY_PID=$!
+
+    # Wait for the gateway to start listening (up to 60 seconds)
     for i in $(seq 1 60); do
-        if ss -tlnp | grep -q ':18789'; then break; fi
+        if ss -tlnp | grep -q ":18789"; then break; fi
         sleep 1
     done
-    if ! ss -tlnp | grep -q ':18789'; then continue; fi
-    while kill -0 $GATEWAY_PID 2>/dev/null && ss -tlnp | grep -q ':18789'; do
+
+    # If it never started listening, loop and retry
+    if ! ss -tlnp | grep -q ":18789"; then
+        echo "[auto-recovery] Gateway failed to start listening, retrying..."
+        kill $GATEWAY_PID 2>/dev/null; wait $GATEWAY_PID 2>/dev/null
+        continue
+    fi
+
+    echo "[auto-recovery] Gateway is listening on port 18789 (PID $GATEWAY_PID)"
+
+    # Monitor: check every 10 seconds that the process is alive AND the port is listening
+    while kill -0 $GATEWAY_PID 2>/dev/null && ss -tlnp | grep -q ":18789"; do
         sleep 10
     done
+
+    echo "[auto-recovery] Gateway stopped (PID $GATEWAY_PID), restarting in 5 seconds..."
     sleep 5
 done
 SCRIPT
@@ -365,14 +406,25 @@ sudo chmod +x /opt/openclaw-start.sh
 # Update the systemd service to use the wrapper
 sudo tee /etc/systemd/system/openclaw.service > /dev/null << 'SERVICE'
 [Unit]
-Description=OpenClaw Gateway
-After=network.target
+Description=OpenClaw Gateway Service
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
+User=openclaw
+Group=openclaw
+WorkingDirectory=/home/openclaw
+EnvironmentFile=/opt/openclaw.env
+Environment="HOME=/home/openclaw"
+Environment="NODE_ENV=production"
+Environment="PATH=/home/openclaw/.openclaw/workspace/npm/bin:/home/openclaw/.openclaw/workspace/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
 ExecStart=/opt/openclaw-start.sh
 Restart=always
 RestartSec=5
+StandardOutput=journal
+StandardError=journal
+LimitNOFILE=65536
 
 [Install]
 WantedBy=multi-user.target
@@ -381,7 +433,11 @@ sudo systemctl daemon-reload
 sudo systemctl restart openclaw
 ```
 
-> **What does this do?** The wrapper monitors the gateway every 10 seconds and auto-restarts it if it dies. Without this, the gateway can silently stop and your bot goes offline.
+> **What does this do?** The wrapper monitors the gateway every 10 seconds and auto-restarts it if it dies or stops listening on the port. Without this, the gateway can silently stop and your bot goes offline. The wrapper also:
+> - Handles SIGTERM/SIGINT cleanly for `systemctl stop`
+> - Kills orphaned gateway processes before starting
+> - Logs recovery events to journald
+> - Runs as the `openclaw` user (not root) via the systemd service
 
 #### Open the Dashboard
 
@@ -1007,14 +1063,44 @@ Go to [console.anthropic.com](https://console.anthropic.com) and set a daily spe
 
 ### Fixing "Gateway Token Mismatch"
 
-If you see `unauthorized: gateway token mismatch` in the Control UI or when running `openclaw doctor`, the most common cause is a **dual-config problem** — two different config files with two different tokens.
+If you see `unauthorized: gateway token mismatch` in the Control UI or when running `openclaw doctor`, there are **two common causes**:
 
-**How it happens:** If anyone runs an `openclaw` command as root (without `sudo -iu openclaw`), OpenClaw creates a second config at `/root/.openclaw/openclaw.json` with its own auto-generated token. The gateway's background process reads root's config, but the token you copied came from the openclaw user's config. They don't match.
+#### Cause 1: Env file token desync (most common on 1-Click droplets)
+
+The 1-Click image ships with a pre-generated token in `/opt/openclaw.env`. When you run `openclaw onboard`, the wizard generates a **new** token in `openclaw.json` but does NOT update the env file. Scripts and dashboards that read the env file get the wrong token.
 
 **How to check:**
 
 ```bash
-# See the openclaw user's token (this is the one you copied)
+# Get the REAL token (from openclaw.json — the authoritative source)
+sudo -iu openclaw python3 -c "import json; print(json.load(open('/home/openclaw/.openclaw/openclaw.json'))['gateway']['auth']['token'])"
+
+# Get the env file token
+grep OPENCLAW_GATEWAY_TOKEN /opt/openclaw.env
+```
+
+If they're different, that's your problem.
+
+**Fix:**
+
+```bash
+NEW_TOKEN=$(sudo -iu openclaw python3 -c "import json; print(json.load(open('/home/openclaw/.openclaw/openclaw.json'))['gateway']['auth']['token'])")
+sudo grep -v '^OPENCLAW_GATEWAY_TOKEN=' /opt/openclaw.env > /tmp/oc-env.tmp
+echo "OPENCLAW_GATEWAY_TOKEN=$NEW_TOKEN" | sudo tee -a /tmp/oc-env.tmp > /dev/null
+sudo mv /tmp/oc-env.tmp /opt/openclaw.env
+sudo systemctl restart openclaw
+```
+
+**Prevention:** Always run the token sync step after `openclaw onboard` (see Stage 7.3 "Sync the Gateway Token").
+
+#### Cause 2: Dual-config problem (root vs openclaw user)
+
+If anyone runs an `openclaw` command as root (without `sudo -iu openclaw`), OpenClaw creates a second config at `/root/.openclaw/openclaw.json` with its own auto-generated token.
+
+**How to check:**
+
+```bash
+# See the openclaw user's token (this is the one the service uses)
 sudo -iu openclaw cat ~/.openclaw/openclaw.json | grep -o '"token":"[^"]*"' | head -1
 
 # See root's token (if this file exists, you have the dual-config problem)
@@ -1034,10 +1120,8 @@ The `doctor --fix` command detects the mismatch and syncs the tokens automatical
 
 **Manual fix (if doctor --fix doesn't resolve it):**
 
-Copy the correct token from the openclaw user's config and sync it to root's config. Run these **on your server**:
-
 ```bash
-# 1. Get the correct token
+# 1. Get the correct token from the openclaw user's config
 sudo -iu openclaw cat ~/.openclaw/openclaw.json | grep -o '"token":"[^"]*"' | head -1
 # Copy the token value between the quotes
 
@@ -1045,16 +1129,18 @@ sudo -iu openclaw cat ~/.openclaw/openclaw.json | grep -o '"token":"[^"]*"' | he
 openclaw config set gateway.auth.token YOUR_TOKEN
 openclaw config set gateway.remote.token YOUR_TOKEN
 
-# 3. Also check the env file — it can override the config
-cat /opt/openclaw.env | grep OPENCLAW_GATEWAY_TOKEN
-# If the token there is different, update it too:
-sudo sed -i "s/OPENCLAW_GATEWAY_TOKEN=.*/OPENCLAW_GATEWAY_TOKEN=YOUR_TOKEN/" /opt/openclaw.env
+# 3. Also sync the env file
+sudo grep -v '^OPENCLAW_GATEWAY_TOKEN=' /opt/openclaw.env > /tmp/oc-env.tmp
+echo "OPENCLAW_GATEWAY_TOKEN=YOUR_TOKEN" | sudo tee -a /tmp/oc-env.tmp > /dev/null
+sudo mv /tmp/oc-env.tmp /opt/openclaw.env
 
 # 4. Restart the service
 sudo systemctl restart openclaw
 ```
 
-**How to prevent it:** Always use `sudo -iu openclaw` before any `openclaw` command. Never run bare `openclaw` as root.
+**How to prevent both causes:**
+1. Always use `sudo -iu openclaw` before any `openclaw` command (prevents Cause 2)
+2. Always run the token sync step after `openclaw onboard` (prevents Cause 1)
 
 ---
 
