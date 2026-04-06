@@ -253,8 +253,8 @@ echo ""
 # -----------------------------------------------------------
 # Step 7: Start and verify
 # -----------------------------------------------------------
-echo "[7/7] Starting gateway..."
-systemctl start openclaw
+echo "[7/7] Restarting gateway..."
+systemctl restart openclaw
 echo "  Waiting 30s for gateway to initialize..."
 sleep 30
 
