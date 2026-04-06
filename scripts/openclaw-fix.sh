@@ -13,6 +13,12 @@
 
 set -euo pipefail
 
+# Must run as root
+if [ "$(id -u)" -ne 0 ]; then
+  echo "ERROR: Run this script as root (use sudo)"
+  exit 1
+fi
+
 echo "==========================================="
 echo " OpenClaw Universal Gateway Fix"
 echo "==========================================="
