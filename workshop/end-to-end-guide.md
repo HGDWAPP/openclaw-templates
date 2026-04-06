@@ -341,7 +341,7 @@ sudo -iu openclaw cat ~/.openclaw/openclaw.json | grep -o '"token":"[^"]*"' | he
 ```bash
 # Extract the correct token from openclaw.json and sync it to the env file
 NEW_TOKEN=$(sudo -iu openclaw python3 -c "import json; print(json.load(open('/home/openclaw/.openclaw/openclaw.json'))['gateway']['auth']['token'])")
-sudo sed -i "s/OPENCLAW_GATEWAY_TOKEN=.*/OPENCLAW_GATEWAY_TOKEN=$NEW_TOKEN/" /opt/openclaw.env
+sudo sed -i "s|OPENCLAW_GATEWAY_TOKEN=.*|OPENCLAW_GATEWAY_TOKEN=$NEW_TOKEN|" /opt/openclaw.env
 sudo sed -i 's/OPENCLAW_GATEWAY_BIND=lan/OPENCLAW_GATEWAY_BIND=loopback/' /opt/openclaw.env
 sudo systemctl restart openclaw
 
@@ -384,6 +384,7 @@ while true; do
     # If it never started listening, loop and retry
     if ! ss -tlnp | grep -q ":18789"; then
         echo "[auto-recovery] Gateway failed to start listening, retrying..."
+        kill $GATEWAY_PID 2>/dev/null; wait $GATEWAY_PID 2>/dev/null
         continue
     fi
 
@@ -1082,7 +1083,7 @@ If they're different, that's your problem.
 
 ```bash
 NEW_TOKEN=$(sudo -iu openclaw python3 -c "import json; print(json.load(open('/home/openclaw/.openclaw/openclaw.json'))['gateway']['auth']['token'])")
-sudo sed -i "s/OPENCLAW_GATEWAY_TOKEN=.*/OPENCLAW_GATEWAY_TOKEN=$NEW_TOKEN/" /opt/openclaw.env
+sudo sed -i "s|OPENCLAW_GATEWAY_TOKEN=.*|OPENCLAW_GATEWAY_TOKEN=$NEW_TOKEN|" /opt/openclaw.env
 sudo systemctl restart openclaw
 ```
 
@@ -1125,7 +1126,7 @@ openclaw config set gateway.auth.token YOUR_TOKEN
 openclaw config set gateway.remote.token YOUR_TOKEN
 
 # 3. Also sync the env file
-sudo sed -i "s/OPENCLAW_GATEWAY_TOKEN=.*/OPENCLAW_GATEWAY_TOKEN=YOUR_TOKEN/" /opt/openclaw.env
+sudo sed -i "s|OPENCLAW_GATEWAY_TOKEN=.*|OPENCLAW_GATEWAY_TOKEN=YOUR_TOKEN|" /opt/openclaw.env
 
 # 4. Restart the service
 sudo systemctl restart openclaw
