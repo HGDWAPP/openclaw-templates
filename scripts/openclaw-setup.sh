@@ -198,7 +198,7 @@ ENV="/opt/openclaw.env"
 
 # Extract the authoritative token from the config
 TOKEN=$(sudo -iu openclaw python3 -c \
-  "import json; print(json.load(open('$CONF'))['gateway']['auth']['token'])")
+  "import json; print(json.load(open('$CONF'))['gateway']['auth']['token'])" 2>/dev/null) || true
 
 if [ -z "$TOKEN" ]; then
   echo "  WARNING: Could not read token from config."
