@@ -1,9 +1,13 @@
 #!/bin/bash
 # ============================================================
 # OpenClaw First-Time Setup
-# Run this ONCE on a fresh 1-Click droplet, BEFORE onboarding.
+# Run this ONCE on a fresh droplet, BEFORE onboarding.
+# Works on both 1-Click droplets AND plain Ubuntu droplets.
 #
 # What it does:
+#   0. Detects if this is a 1-Click or fresh droplet
+#      - If fresh: installs Node.js, npm, openclaw, creates
+#        the openclaw user, and sets up the env file
 #   1. Pre-fixes the service file (User=openclaw, keep-alive
 #      wrapper) so the crash loop NEVER happens
 #   2. Fixes bind setting (lan -> loopback)
@@ -34,6 +38,66 @@ echo ""
 if [ "$(id -u)" -ne 0 ]; then
   echo "ERROR: Run this script as root (use sudo)"
   exit 1
+fi
+
+# -----------------------------------------------------------
+# Step 0: Detect environment and install prerequisites
+# Works on both 1-Click droplets and plain Ubuntu droplets.
+# -----------------------------------------------------------
+FRESH_INSTALL=false
+
+# Check if openclaw user exists
+if ! id -u openclaw &>/dev/null; then
+  FRESH_INSTALL=true
+  echo "[0/7] Fresh droplet detected — installing prerequisites..."
+  echo ""
+
+  # Install Node.js via NodeSource (LTS)
+  echo "  Installing Node.js LTS..."
+  apt-get update -qq
+  apt-get install -y -qq ca-certificates curl gnupg python3 > /dev/null 2>&1
+  mkdir -p /etc/apt/keyrings
+  if [ ! -f /etc/apt/keyrings/nodesource.gpg ]; then
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
+      | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+  fi
+  NODE_MAJOR=20
+  echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" \
+    > /etc/apt/sources.list.d/nodesource.list
+  apt-get update -qq
+  apt-get install -y -qq nodejs > /dev/null 2>&1
+  echo "  Node.js $(node --version) installed"
+  echo "  npm $(npm --version) installed"
+  echo ""
+
+  # Install OpenClaw globally
+  echo "  Installing OpenClaw..."
+  npm i -g openclaw@latest 2>&1 | tail -3
+  echo "  OpenClaw $(openclaw --version 2>/dev/null || echo 'installed') ready"
+  echo ""
+
+  # Create the openclaw system user
+  echo "  Creating openclaw user..."
+  useradd --system --create-home --shell /bin/bash openclaw
+  echo "  User 'openclaw' created"
+  echo ""
+
+  # Create the env file (1-Click images ship with this pre-made)
+  if [ ! -f /opt/openclaw.env ]; then
+    cat > /opt/openclaw.env << 'ENVFILE'
+OPENCLAW_GATEWAY_PORT=18789
+OPENCLAW_GATEWAY_BIND=loopback
+ENVFILE
+    chown root:root /opt/openclaw.env
+    chmod 644 /opt/openclaw.env
+    echo "  Created /opt/openclaw.env"
+  fi
+  echo ""
+  echo "  Prerequisites installed successfully!"
+  echo ""
+else
+  echo "[0/7] 1-Click droplet detected — openclaw user exists"
+  echo ""
 fi
 
 # -----------------------------------------------------------
@@ -130,9 +194,13 @@ echo ""
 # Step 3: Update OpenClaw
 # -----------------------------------------------------------
 echo "[3/7] Updating OpenClaw..."
-npm i -g openclaw@latest 2>&1 | tail -3 || echo "  WARNING: npm update failed. Continuing with existing version."
+if [ "$FRESH_INSTALL" = true ]; then
+  echo "  Already installed in Step 0 — skipping."
+else
+  npm i -g openclaw@latest 2>&1 | tail -3 || echo "  WARNING: npm update failed. Continuing with existing version."
+fi
 echo ""
-echo "  Version: $(sudo -iu openclaw openclaw --version 2>/dev/null || echo 'unknown')"
+echo "  Version: $(openclaw --version 2>/dev/null || echo 'unknown')"
 echo ""
 
 # Stop the gateway before onboarding (clean slate)
