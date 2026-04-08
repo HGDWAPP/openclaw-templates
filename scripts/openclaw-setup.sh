@@ -86,7 +86,7 @@ if ! id -u openclaw &>/dev/null; then
 
   # Install missing optional dependency required by onboard wizard
   echo "  Installing required dependency (@larksuiteoapi/node-sdk)..."
-  npm i -g @larksuiteoapi/node-sdk 2>&1 | tail -3
+  npm i -g @larksuiteoapi/node-sdk 2>&1 | tail -3 || true
   echo ""
 
   # Create the openclaw system user
