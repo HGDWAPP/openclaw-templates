@@ -66,12 +66,12 @@ if ! id -u openclaw &>/dev/null; then
   mkdir -p /etc/apt/keyrings
   curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
     | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg --yes
-  NODE_MAJOR=20
+  NODE_MAJOR=22
   echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" \
     > /etc/apt/sources.list.d/nodesource.list
   apt-get update -q
   echo ""
-  echo "  Installing Node.js 20 LTS..."
+  echo "  Installing Node.js 22 LTS..."
   apt-get install -y nodejs
   echo ""
   echo "  Node.js $(node --version) installed"
@@ -82,6 +82,11 @@ if ! id -u openclaw &>/dev/null; then
   echo "  Installing OpenClaw (this may take a minute)..."
   npm i -g openclaw@latest 2>&1
   echo "  OpenClaw $(openclaw --version 2>/dev/null || echo 'installed') ready"
+  echo ""
+
+  # Install missing optional dependency required by onboard wizard
+  echo "  Installing required dependency (@larksuiteoapi/node-sdk)..."
+  npm i -g @larksuiteoapi/node-sdk 2>&1 | tail -3 || true
   echo ""
 
   # Create the openclaw system user
@@ -206,6 +211,8 @@ if [ "$FRESH_INSTALL" = true ]; then
   echo "  Already installed in Step 0 — skipping."
 else
   npm i -g openclaw@latest 2>&1 | tail -3 || echo "  WARNING: npm update failed. Continuing with existing version."
+  # Install missing optional dependency required by onboard wizard
+  npm i -g @larksuiteoapi/node-sdk 2>&1 | tail -3 || true
 fi
 echo ""
 echo "  Version: $(openclaw --version 2>/dev/null || echo 'unknown')"
