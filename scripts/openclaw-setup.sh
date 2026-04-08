@@ -84,6 +84,11 @@ if ! id -u openclaw &>/dev/null; then
   echo "  OpenClaw $(openclaw --version 2>/dev/null || echo 'installed') ready"
   echo ""
 
+  # Install missing optional dependency required by onboard wizard
+  echo "  Installing required dependency (@larksuiteoapi/node-sdk)..."
+  npm i -g @larksuiteoapi/node-sdk 2>&1 | tail -3
+  echo ""
+
   # Create the openclaw system user
   echo "  Creating openclaw user..."
   useradd --system --create-home --shell /bin/bash openclaw
@@ -206,6 +211,8 @@ if [ "$FRESH_INSTALL" = true ]; then
   echo "  Already installed in Step 0 — skipping."
 else
   npm i -g openclaw@latest 2>&1 | tail -3 || echo "  WARNING: npm update failed. Continuing with existing version."
+  # Install missing optional dependency required by onboard wizard
+  npm i -g @larksuiteoapi/node-sdk 2>&1 | tail -3 || true
 fi
 echo ""
 echo "  Version: $(openclaw --version 2>/dev/null || echo 'unknown')"
