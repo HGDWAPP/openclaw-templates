@@ -254,7 +254,7 @@ app.post("/api/setup/api-key", (req, res) => {
     const envVar = envVarMap[provider];
     const line = `${envVar}=${apiKey.trim()}`;
     if (envContent.includes(envVar)) {
-      envContent = envContent.replace(new RegExp(`${envVar}=.*`), line);
+      envContent = envContent.replace(new RegExp(`${envVar}=.*`), () => line);
     } else {
       envContent += `\n${line}`;
     }

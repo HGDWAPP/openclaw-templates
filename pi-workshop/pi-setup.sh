@@ -200,7 +200,7 @@ fi
 
 step "Kiosk mode"
 KIOSK_SCRIPT="$WORKSHOP_DIR/kiosk-mode.sh"
-if [ -f "$KIOSK_SCRIPT" ]; then
+if [ -t 0 ] && [ -f "$KIOSK_SCRIPT" ]; then
   read -r -p "Enable kiosk mode? (Pi boots directly into workspace) [y/N] " KIOSK_REPLY
   if [[ "$KIOSK_REPLY" =~ ^[Yy]$ ]]; then
     sudo bash "$KIOSK_SCRIPT"
@@ -208,6 +208,8 @@ if [ -f "$KIOSK_SCRIPT" ]; then
   else
     log "Kiosk mode skipped — enable later with: sudo bash $KIOSK_SCRIPT"
   fi
+elif [ -f "$KIOSK_SCRIPT" ]; then
+  log "Non-interactive install — kiosk mode skipped. Enable later with: sudo bash $KIOSK_SCRIPT"
 else
   warn "Kiosk script not found at $KIOSK_SCRIPT"
 fi
