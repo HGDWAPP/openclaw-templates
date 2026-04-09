@@ -1,5 +1,6 @@
 const express = require("express");
-const { execSync } = require("child_process");
+const { execSync, execFileSync } = require("child_process");
+const https = require("https");
 const fs = require("fs");
 const path = require("path");
 
@@ -63,6 +64,38 @@ function runCommand(cmd, timeoutMs = 30000) {
       output: err.stderr || err.message || "Command failed",
     };
   }
+}
+
+// Safe command execution using execFileSync (no shell interpretation)
+function runSafeCommand(file, args, timeoutMs = 30000) {
+  try {
+    return {
+      success: true,
+      output: execFileSync(file, args, {
+        timeout: timeoutMs,
+        encoding: "utf8",
+        stdio: ["pipe", "pipe", "pipe"],
+      }).trim(),
+    };
+  } catch (err) {
+    return {
+      success: false,
+      output: err.stderr || err.message || "Command failed",
+    };
+  }
+}
+
+// Safe HTTPS GET (replaces shelling out to curl)
+function httpsGet(url, timeoutMs = 10000) {
+  return new Promise((resolve, reject) => {
+    const req = https.get(url, { timeout: timeoutMs }, (res) => {
+      let data = "";
+      res.on("data", (chunk) => (data += chunk));
+      res.on("end", () => resolve(data));
+    });
+    req.on("error", reject);
+    req.on("timeout", () => { req.destroy(); reject(new Error("Timeout")); });
+  });
 }
 
 // -------------------------------------------------------------------
@@ -197,10 +230,12 @@ app.post("/api/setup/api-key", (req, res) => {
     return res.status(400).json({ error: "Invalid API key" });
   }
 
-  // Configure via OpenClaw CLI
-  runCommand(
-    `openclaw models auth paste-token --provider ${provider} --token "${apiKey.trim()}" 2>&1`
-  );
+  // Configure via OpenClaw CLI (using execFileSync to prevent shell injection)
+  runSafeCommand("openclaw", [
+    "models", "auth", "paste-token",
+    "--provider", provider,
+    "--token", apiKey.trim(),
+  ]);
 
   // Also save as env var fallback
   const envVarMap = {
@@ -242,22 +277,20 @@ app.post("/api/setup/api-key", (req, res) => {
 });
 
 // Step 4: Configure Telegram
-app.post("/api/setup/telegram", (req, res) => {
+app.post("/api/setup/telegram", async (req, res) => {
   const { botToken, userId } = req.body;
 
   if (!botToken || botToken.trim().length < 20) {
     return res.status(400).json({ error: "Invalid bot token" });
   }
 
-  // Verify with Telegram API
-  const verifyResult = runCommand(
-    `curl -s "https://api.telegram.org/bot${botToken.trim()}/getMe"`,
-    10000
-  );
-
+  // Verify with Telegram API (using native https, not shell curl)
   let botInfo = null;
   try {
-    const parsed = JSON.parse(verifyResult.output);
+    const rawResponse = await httpsGet(
+      `https://api.telegram.org/bot${encodeURIComponent(botToken.trim())}/getMe`
+    );
+    const parsed = JSON.parse(rawResponse);
     if (!parsed.ok) {
       return res
         .status(400)
@@ -268,18 +301,26 @@ app.post("/api/setup/telegram", (req, res) => {
     return res.status(400).json({ error: "Could not verify bot token" });
   }
 
-  // Add channel via CLI
-  runCommand(
-    `openclaw channels add --channel telegram --token "${botToken.trim()}" 2>&1`
-  );
+  // Add channel via CLI (using execFileSync to prevent shell injection)
+  runSafeCommand("openclaw", [
+    "channels", "add",
+    "--channel", "telegram",
+    "--token", botToken.trim(),
+  ]);
 
   if (userId && userId.trim().length > 0) {
-    runCommand(
-      `openclaw config set channels.telegram.dmPolicy allowlist 2>&1`
-    );
-    runCommand(
-      `openclaw config set channels.telegram.allowFrom '["${userId.trim()}"]' 2>&1`
-    );
+    // Sanitize userId to digits only
+    const safeUserId = userId.trim().replace(/[^0-9]/g, "");
+    if (safeUserId.length > 0) {
+      runSafeCommand("openclaw", [
+        "config", "set",
+        "channels.telegram.dmPolicy", "allowlist",
+      ]);
+      runSafeCommand("openclaw", [
+        "config", "set",
+        "channels.telegram.allowFrom", JSON.stringify([safeUserId]),
+      ]);
+    }
   }
 
   const state = loadState();

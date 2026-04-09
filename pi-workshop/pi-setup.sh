@@ -196,6 +196,22 @@ else
   log "Swap already configured"
 fi
 
+# ── Kiosk mode (optional) ─────────────────────────────────────────────
+
+step "Kiosk mode"
+KIOSK_SCRIPT="$WORKSHOP_DIR/kiosk-mode.sh"
+if [ -f "$KIOSK_SCRIPT" ]; then
+  read -r -p "Enable kiosk mode? (Pi boots directly into workspace) [y/N] " KIOSK_REPLY
+  if [[ "$KIOSK_REPLY" =~ ^[Yy]$ ]]; then
+    sudo bash "$KIOSK_SCRIPT"
+    log "Kiosk mode enabled"
+  else
+    log "Kiosk mode skipped — enable later with: sudo bash $KIOSK_SCRIPT"
+  fi
+else
+  warn "Kiosk script not found at $KIOSK_SCRIPT"
+fi
+
 # ── Done ───────────────────────────────────────────────────────────────────
 
 IP_ADDR=$(hostname -I | awk '{print $1}')

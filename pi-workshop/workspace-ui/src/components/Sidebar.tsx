@@ -2,13 +2,13 @@ import {
   LayoutDashboard,
   Rocket,
   MessageCircle,
-  Puzzle,
+  Zap as SkillsIcon,
   Trophy,
   Settings as SettingsIcon,
   ChevronLeft,
   ChevronRight,
   Zap,
-  Cpu,
+  Sparkles,
 } from "lucide-react";
 import type { Page, AgentState } from "../App";
 
@@ -24,7 +24,7 @@ const NAV_ITEMS: { id: Page; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "onboarding", label: "Setup", icon: Rocket },
   { id: "chat", label: "Chat", icon: MessageCircle },
-  { id: "templates", label: "Templates", icon: Puzzle },
+  { id: "templates", label: "Skills", icon: SkillsIcon },
   { id: "achievements", label: "Achievements", icon: Trophy },
   { id: "settings", label: "Settings", icon: SettingsIcon },
 ];
@@ -40,7 +40,7 @@ export default function Sidebar({ currentPage, setPage, agentState, collapsed, s
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-5 border-b border-zinc-800">
         <div className="relative flex items-center justify-center w-9 h-9 rounded-lg bg-gradient-to-br from-orange-500 to-red-600 shrink-0">
-          <Cpu className="w-5 h-5 text-white" />
+          <Sparkles className="w-5 h-5 text-white" />
           {agentState.gatewayRunning && (
             <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-zinc-900" />
           )}

@@ -1,16 +1,15 @@
 import { useState } from "react";
 import {
-  Fingerprint,
+  User,
+  Sparkles,
   Brain,
-  Puzzle,
-  Send,
-  Power,
   MessageCircle,
+  Rocket,
   Check,
   ArrowRight,
   ArrowLeft,
-  Sparkles,
-  AlertCircle,
+  QrCode,
+  ExternalLink,
 } from "lucide-react";
 import type { Page, AgentState } from "../App";
 
@@ -22,90 +21,132 @@ interface Props {
 }
 
 const STEPS = [
-  { id: "name", title: "Name Your Agent", subtitle: "Give your AI assistant an identity", icon: Fingerprint },
-  { id: "template", title: "Choose a Personality", subtitle: "Select a pre-built agent template", icon: Puzzle },
-  { id: "api-key", title: "Connect the Brain", subtitle: "Add your AI provider API key", icon: Brain },
-  { id: "telegram", title: "Open a Channel", subtitle: "Connect Telegram to chat anywhere", icon: Send },
-  { id: "activate", title: "Launch Your Agent", subtitle: "Start the gateway and go live", icon: Power },
-  { id: "first-message", title: "Say Hello", subtitle: "Send your first message", icon: MessageCircle },
+  { id: "about-you", title: "About You", subtitle: "Tell your agent who you are", icon: User },
+  { id: "your-world", title: "Your World", subtitle: "What do you work on and care about?", icon: Sparkles },
+  { id: "agent-brain", title: "Your Agent's Brain", subtitle: "Pick the AI that powers your assistant", icon: Brain },
+  { id: "stay-connected", title: "Stay Connected", subtitle: "Chat with your agent from your phone", icon: MessageCircle },
+  { id: "launch", title: "Meet Your Agent", subtitle: "Bring your personal assistant online", icon: Rocket },
 ];
 
-const TEMPLATES = [
+const ROLES = [
+  "Student", "Designer", "Developer", "Marketer",
+  "Founder", "Researcher", "Creator", "Consultant",
+  "Product Manager", "Writer", "Educator", "Other",
+];
+
+const INTERESTS = [
+  "Productivity", "AI & Automation", "Design", "Engineering",
+  "Marketing", "Content Creation", "Research", "Business Strategy",
+  "Social Media", "Data Analysis", "Project Management", "Learning",
+];
+
+const COMM_STYLES = [
+  { id: "concise", label: "Keep it short", desc: "Bullet points, direct answers, no fluff" },
+  { id: "detailed", label: "Give me context", desc: "Explain your reasoning, provide background" },
+  { id: "friendly", label: "Be conversational", desc: "Casual tone, like chatting with a friend" },
+  { id: "professional", label: "Stay professional", desc: "Formal tone, structured responses" },
+];
+
+const AI_BRAINS = [
   {
-    id: "chief-of-staff",
-    name: "Chief of Staff",
-    description: "Executive assistant for email triage, task management, and relationship tracking. Perfect for busy professionals.",
-    color: "from-blue-600 to-indigo-600",
-    features: ["Email triage", "Task management", "Calendar coordination", "Relationship CRM"],
+    id: "google",
+    name: "Gemini",
+    tagline: "by Google",
+    desc: "Fast, free to start, great all-rounder. Recommended for workshops.",
+    highlight: "Free tier available",
+    getKeyUrl: "https://aistudio.google.com/apikey",
   },
   {
-    id: "marketing-operator",
-    name: "Marketing Operator",
-    description: "Content strategy, social media management, and audience growth. Built for creators and marketers.",
-    color: "from-pink-600 to-rose-600",
-    features: ["Content calendar", "Social posting", "Audience analytics", "Copy generation"],
+    id: "anthropic",
+    name: "Claude",
+    tagline: "by Anthropic",
+    desc: "Exceptional at reasoning, writing, and nuanced conversations.",
+    highlight: "Best for deep work",
+    getKeyUrl: "https://console.anthropic.com/settings/keys",
   },
   {
-    id: "blank",
-    name: "Blank Slate",
-    description: "Start from scratch. Full control over every aspect of your agent's personality and capabilities.",
-    color: "from-zinc-600 to-zinc-700",
-    features: ["Custom persona", "Manual config", "Full flexibility", "Advanced users"],
+    id: "openai",
+    name: "ChatGPT",
+    tagline: "by OpenAI",
+    desc: "The most widely used AI. Versatile and reliable for everything.",
+    highlight: "Most popular",
+    getKeyUrl: "https://platform.openai.com/api-keys",
   },
 ];
 
-const PROVIDERS = [
-  { id: "google", name: "Google Gemini", hint: "Free tier available — recommended for workshops", prefix: "AI" },
-  { id: "anthropic", name: "Anthropic Claude", hint: "Best reasoning & coding ability", prefix: "sk-ant-" },
-  { id: "openai", name: "OpenAI GPT", hint: "Most popular general-purpose models", prefix: "sk-" },
+const SKILLS = [
+  { id: "chief-of-staff", name: "Personal Chief of Staff", desc: "Email triage, task management, calendar, relationship tracking" },
+  { id: "marketing-operator", name: "Content & Marketing", desc: "Content calendar, social posts, audience growth, copywriting" },
+  { id: "dev-assistant", name: "Dev Companion", desc: "Code review, docs, deploy monitoring, technical research" },
+  { id: "research-analyst", name: "Research Partner", desc: "Deep research, competitive analysis, knowledge synthesis" },
+  { id: "blank", name: "Start Fresh", desc: "Build your agent's capabilities from scratch" },
 ];
 
 export default function Onboarding({ agentState, updateState, unlockAchievement, setPage }: Props) {
   const [step, setStep] = useState(agentState.currentStep);
-  const [nameInput, setNameInput] = useState(agentState.agentName);
-  const [selectedTemplate, setSelectedTemplate] = useState(agentState.templateId);
-  const [selectedProvider, setSelectedProvider] = useState(agentState.apiProvider);
+
+  // Step 0: About You
+  const [yourName, setYourName] = useState("");
+  const [agentName, setAgentName] = useState(agentState.agentName);
+  const [selectedRole, setSelectedRole] = useState("");
+
+  // Step 1: Your World
+  const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
+  const [goals, setGoals] = useState("");
+  const [commStyle, setCommStyle] = useState("");
+
+  // Step 2: Agent Brain
+  const [selectedBrain, setSelectedBrain] = useState(agentState.apiProvider);
   const [apiKeyInput, setApiKeyInput] = useState("");
-  const [telegramTokenInput, setTelegramTokenInput] = useState("");
-  const [telegramUserIdInput, setTelegramUserIdInput] = useState("");
+
+  // Step 3: Stay Connected
+  const [telegramToken, setTelegramToken] = useState("");
+  const [skipTelegram, setSkipTelegram] = useState(false);
+
+  // Loading states
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
-  const isStepCompleted = (idx: number) => agentState.currentStep > idx;
+  const isCompleted = (idx: number) => agentState.currentStep > idx;
 
-  const handleNameSubmit = () => {
-    if (!nameInput.trim()) return;
+  const toggleInterest = (interest: string) => {
+    setSelectedInterests((prev) =>
+      prev.includes(interest) ? prev.filter((i) => i !== interest) : [...prev, interest]
+    );
+  };
+
+  // Step 0 -> 1
+  const handleAboutYou = () => {
+    if (!agentName.trim()) return;
     updateState({
-      agentName: nameInput.trim(),
+      agentName: agentName.trim(),
       currentStep: Math.max(agentState.currentStep, 1),
-      completedSteps: [...new Set([...agentState.completedSteps, "name"])],
+      completedSteps: [...new Set([...agentState.completedSteps, "about-you"])],
     });
     unlockAchievement("named", 10);
     setStep(1);
   };
 
-  const handleTemplateSubmit = () => {
-    if (!selectedTemplate) return;
+  // Step 1 -> 2
+  const handleYourWorld = () => {
     updateState({
-      templateId: selectedTemplate,
+      templateId: agentState.templateId || "chief-of-staff",
       currentStep: Math.max(agentState.currentStep, 2),
-      completedSteps: [...new Set([...agentState.completedSteps, "template"])],
+      completedSteps: [...new Set([...agentState.completedSteps, "your-world"])],
     });
     unlockAchievement("template-chosen", 20);
     setStep(2);
   };
 
-  const handleApiKeySubmit = () => {
-    if (!selectedProvider || !apiKeyInput.trim()) return;
+  // Step 2 -> 3
+  const handleBrainConnect = () => {
+    if (!selectedBrain || !apiKeyInput.trim()) return;
     setLoading(true);
-    setError("");
-    // Simulate API call (in production, this hits the Express server on the Pi)
     setTimeout(() => {
       updateState({
-        apiProvider: selectedProvider,
+        apiProvider: selectedBrain,
         apiKeySet: true,
         currentStep: Math.max(agentState.currentStep, 3),
-        completedSteps: [...new Set([...agentState.completedSteps, "api-key"])],
+        completedSteps: [...new Set([...agentState.completedSteps, "agent-brain"])],
       });
       unlockAchievement("brain-connected", 30);
       setLoading(false);
@@ -113,68 +154,100 @@ export default function Onboarding({ agentState, updateState, unlockAchievement,
     }, 1500);
   };
 
-  const handleTelegramSubmit = () => {
-    if (!telegramTokenInput.trim()) return;
+  // Step 3 -> 4
+  const handleConnected = () => {
     setLoading(true);
-    setError("");
     setTimeout(() => {
       updateState({
-        telegramConnected: true,
+        telegramConnected: !skipTelegram && telegramToken.trim().length > 0,
         currentStep: Math.max(agentState.currentStep, 4),
-        completedSteps: [...new Set([...agentState.completedSteps, "telegram"])],
+        completedSteps: [...new Set([...agentState.completedSteps, "stay-connected"])],
       });
-      unlockAchievement("channel-active", 25);
+      if (!skipTelegram && telegramToken.trim().length > 0) {
+        unlockAchievement("channel-active", 25);
+      }
       setLoading(false);
       setStep(4);
-    }, 2000);
+    }, 1500);
   };
 
-  const handleActivate = () => {
+  // Step 4 -> Done
+  const handleLaunch = () => {
     setLoading(true);
-    setError("");
     setTimeout(() => {
       updateState({
         gatewayRunning: true,
         currentStep: Math.max(agentState.currentStep, 5),
-        completedSteps: [...new Set([...agentState.completedSteps, "activated"])],
+        completedSteps: [...new Set([...agentState.completedSteps, "launched"])],
       });
       unlockAchievement("gateway-live", 40);
+      unlockAchievement("first-message", 50);
       setLoading(false);
-      setStep(5);
+      setPage("dashboard");
     }, 3000);
   };
 
-  const handleFirstMessage = () => {
-    unlockAchievement("first-message", 50);
-    updateState({
-      currentStep: Math.max(agentState.currentStep, 6),
-      completedSteps: [...new Set([...agentState.completedSteps, "first-message"])],
-    });
-    setPage("dashboard");
-  };
-
-  const renderStepContent = () => {
+  const renderStep = () => {
     switch (step) {
       case 0:
         return (
-          <div className="space-y-6">
+          <div className="space-y-6 animate-in fade-in">
+            <div className="bg-gradient-to-br from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-2xl p-6 mb-2">
+              <p className="text-lg text-zinc-200 leading-relaxed">
+                You're about to set up your own <span className="text-orange-400 font-semibold">personal AI agent</span> —
+                one that runs right here on this device, knows your context, and works for <em>you</em>.
+              </p>
+              <p className="text-sm text-zinc-500 mt-2">Everything stays private. Your data never leaves this device.</p>
+            </div>
+
             <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-2">Agent Name</label>
+              <label className="block text-sm font-medium text-zinc-300 mb-2">What's your name?</label>
               <input
                 type="text"
-                value={nameInput}
-                onChange={(e) => setNameInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleNameSubmit()}
-                placeholder="e.g. Tempo, Atlas, Friday..."
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-lg"
+                value={yourName}
+                onChange={(e) => setYourName(e.target.value)}
+                placeholder="Your first name"
+                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                 autoFocus
               />
-              <p className="text-xs text-zinc-500 mt-2">This is what you'll call your AI assistant. Pick something memorable.</p>
             </div>
+
+            <div>
+              <label className="block text-sm font-medium text-zinc-300 mb-2">Name your agent</label>
+              <input
+                type="text"
+                value={agentName}
+                onChange={(e) => setAgentName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAboutYou()}
+                placeholder="e.g. Tempo, Atlas, Friday, Jarvis..."
+                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-lg"
+              />
+              <p className="text-xs text-zinc-500 mt-2">This is your assistant's name. Pick something that feels right.</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-zinc-300 mb-2">What best describes you?</label>
+              <div className="grid grid-cols-3 gap-2">
+                {ROLES.map((role) => (
+                  <button
+                    key={role}
+                    onClick={() => setSelectedRole(role)}
+                    className={`px-3 py-2 rounded-lg text-sm transition-all ${
+                      selectedRole === role
+                        ? "bg-orange-600 text-white"
+                        : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
+                    }`}
+                  >
+                    {role}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <button
-              onClick={handleNameSubmit}
-              disabled={!nameInput.trim()}
-              className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium rounded-lg py-3 flex items-center justify-center gap-2 transition-all"
+              onClick={handleAboutYou}
+              disabled={!agentName.trim()}
+              className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium rounded-xl py-3.5 flex items-center justify-center gap-2 transition-all"
             >
               Continue <ArrowRight className="w-4 h-4" />
             </button>
@@ -183,50 +256,96 @@ export default function Onboarding({ agentState, updateState, unlockAchievement,
 
       case 1:
         return (
-          <div className="space-y-4">
-            {TEMPLATES.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setSelectedTemplate(t.id)}
-                className={`w-full text-left rounded-xl border-2 p-5 transition-all ${
-                  selectedTemplate === t.id
-                    ? "border-orange-500 bg-zinc-800/80"
-                    : "border-zinc-800 bg-zinc-900 hover:border-zinc-700"
-                }`}
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <div className={`inline-block px-2 py-0.5 rounded text-xs font-bold text-white bg-gradient-to-r ${t.color} mb-2`}>
-                      {t.name}
+          <div className="space-y-6 animate-in fade-in">
+            <div>
+              <label className="block text-sm font-medium text-zinc-300 mb-3">What are you into? <span className="text-zinc-500">(pick a few)</span></label>
+              <div className="flex flex-wrap gap-2">
+                {INTERESTS.map((interest) => (
+                  <button
+                    key={interest}
+                    onClick={() => toggleInterest(interest)}
+                    className={`px-3 py-2 rounded-lg text-sm transition-all ${
+                      selectedInterests.includes(interest)
+                        ? "bg-orange-600 text-white"
+                        : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
+                    }`}
+                  >
+                    {interest}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-zinc-300 mb-2">What do you want your agent to help you with?</label>
+              <textarea
+                value={goals}
+                onChange={(e) => setGoals(e.target.value)}
+                placeholder="e.g. Help me stay on top of my email, manage my content calendar, research competitors..."
+                rows={3}
+                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-zinc-300 mb-3">How should your agent talk to you?</label>
+              <div className="grid grid-cols-1 gap-2">
+                {COMM_STYLES.map((style) => (
+                  <button
+                    key={style.id}
+                    onClick={() => setCommStyle(style.id)}
+                    className={`w-full text-left rounded-xl border-2 p-4 transition-all ${
+                      commStyle === style.id
+                        ? "border-orange-500 bg-zinc-800/80"
+                        : "border-zinc-800 bg-zinc-900 hover:border-zinc-700"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-zinc-200 text-sm">{style.label}</p>
+                        <p className="text-xs text-zinc-500">{style.desc}</p>
+                      </div>
+                      {commStyle === style.id && <Check className="w-4 h-4 text-orange-500" />}
                     </div>
-                    <p className="text-sm text-zinc-400">{t.description}</p>
-                  </div>
-                  {selectedTemplate === t.id && (
-                    <Check className="w-5 h-5 text-orange-500 shrink-0 mt-1" />
-                  )}
-                </div>
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {t.features.map((f) => (
-                    <span key={f} className="text-xs bg-zinc-800 text-zinc-400 rounded-md px-2 py-1">
-                      {f}
-                    </span>
-                  ))}
-                </div>
-              </button>
-            ))}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-zinc-300 mb-3">Give your agent a skill set</label>
+              <div className="space-y-2">
+                {SKILLS.map((skill) => (
+                  <button
+                    key={skill.id}
+                    onClick={() => updateState({ templateId: skill.id })}
+                    className={`w-full text-left rounded-xl border-2 p-4 transition-all ${
+                      agentState.templateId === skill.id
+                        ? "border-orange-500 bg-zinc-800/80"
+                        : "border-zinc-800 bg-zinc-900 hover:border-zinc-700"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-zinc-200 text-sm">{skill.name}</p>
+                        <p className="text-xs text-zinc-500">{skill.desc}</p>
+                      </div>
+                      {agentState.templateId === skill.id && <Check className="w-4 h-4 text-orange-500" />}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="flex gap-3 pt-2">
-              <button
-                onClick={() => setStep(0)}
-                className="px-4 py-3 rounded-lg border border-zinc-700 text-zinc-400 hover:text-zinc-200 transition-colors"
-              >
+              <button onClick={() => setStep(0)} className="px-4 py-3.5 rounded-xl border border-zinc-700 text-zinc-400 hover:text-zinc-200 transition-colors">
                 <ArrowLeft className="w-4 h-4" />
               </button>
               <button
-                onClick={handleTemplateSubmit}
-                disabled={!selectedTemplate}
-                className="flex-1 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium rounded-lg py-3 flex items-center justify-center gap-2 transition-all"
+                onClick={handleYourWorld}
+                className="flex-1 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white font-medium rounded-xl py-3.5 flex items-center justify-center gap-2 transition-all"
               >
-                Install Template <ArrowRight className="w-4 h-4" />
+                Continue <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -234,60 +353,75 @@ export default function Onboarding({ agentState, updateState, unlockAchievement,
 
       case 2:
         return (
-          <div className="space-y-4">
+          <div className="space-y-5 animate-in fade-in">
+            <p className="text-sm text-zinc-400">
+              Your agent uses a cloud AI brain for thinking. Choose one below — you can always change it later.
+            </p>
+
             <div className="space-y-3">
-              {PROVIDERS.map((p) => (
+              {AI_BRAINS.map((brain) => (
                 <button
-                  key={p.id}
-                  onClick={() => setSelectedProvider(p.id)}
+                  key={brain.id}
+                  onClick={() => setSelectedBrain(brain.id)}
                   className={`w-full text-left rounded-xl border-2 p-4 transition-all ${
-                    selectedProvider === p.id
+                    selectedBrain === brain.id
                       ? "border-orange-500 bg-zinc-800/80"
                       : "border-zinc-800 bg-zinc-900 hover:border-zinc-700"
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-zinc-200">{p.name}</p>
-                      <p className="text-xs text-zinc-500">{p.hint}</p>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-zinc-200">{brain.name}</p>
+                      <span className="text-xs text-zinc-500">{brain.tagline}</span>
                     </div>
-                    {selectedProvider === p.id && <Check className="w-5 h-5 text-orange-500" />}
+                    {selectedBrain === brain.id && <Check className="w-4 h-4 text-orange-500" />}
                   </div>
+                  <p className="text-sm text-zinc-400">{brain.desc}</p>
+                  <span className="inline-block mt-2 text-xs bg-orange-500/15 text-orange-400 rounded-full px-2 py-0.5">
+                    {brain.highlight}
+                  </span>
                 </button>
               ))}
             </div>
-            {selectedProvider && (
-              <div>
-                <label className="block text-sm font-medium text-zinc-300 mb-2">API Key</label>
+
+            {selectedBrain && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-medium text-zinc-300">Your key</label>
+                  <a
+                    href={AI_BRAINS.find((b) => b.id === selectedBrain)?.getKeyUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-xs text-orange-400 hover:text-orange-300"
+                  >
+                    Get a free key <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
                 <input
                   type="password"
                   value={apiKeyInput}
                   onChange={(e) => setApiKeyInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleApiKeySubmit()}
-                  placeholder={`Paste your ${PROVIDERS.find((p) => p.id === selectedProvider)?.name} API key`}
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent font-mono text-sm"
+                  onKeyDown={(e) => e.key === "Enter" && handleBrainConnect()}
+                  placeholder="Paste your key here"
+                  className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent font-mono text-sm"
                 />
-                <p className="text-xs text-zinc-500 mt-2">Your key is stored locally on this Pi. Never sent to any third party.</p>
+                <p className="text-xs text-zinc-500">Stored only on this device. Never shared.</p>
               </div>
             )}
-            {error && (
-              <div className="flex items-center gap-2 text-red-400 text-sm">
-                <AlertCircle className="w-4 h-4" /> {error}
-              </div>
-            )}
+
             <div className="flex gap-3 pt-2">
-              <button onClick={() => setStep(1)} className="px-4 py-3 rounded-lg border border-zinc-700 text-zinc-400 hover:text-zinc-200 transition-colors">
+              <button onClick={() => setStep(1)} className="px-4 py-3.5 rounded-xl border border-zinc-700 text-zinc-400 hover:text-zinc-200 transition-colors">
                 <ArrowLeft className="w-4 h-4" />
               </button>
               <button
-                onClick={handleApiKeySubmit}
-                disabled={!selectedProvider || !apiKeyInput.trim() || loading}
-                className="flex-1 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium rounded-lg py-3 flex items-center justify-center gap-2 transition-all"
+                onClick={handleBrainConnect}
+                disabled={!selectedBrain || !apiKeyInput.trim() || loading}
+                className="flex-1 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium rounded-xl py-3.5 flex items-center justify-center gap-2 transition-all"
               >
                 {loading ? (
-                  <span className="flex items-center gap-2"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Verifying...</span>
+                  <span className="flex items-center gap-2"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Connecting...</span>
                 ) : (
-                  <>Connect Brain <ArrowRight className="w-4 h-4" /></>
+                  <>Continue <ArrowRight className="w-4 h-4" /></>
                 )}
               </button>
             </div>
@@ -296,54 +430,63 @@ export default function Onboarding({ agentState, updateState, unlockAchievement,
 
       case 3:
         return (
-          <div className="space-y-6">
-            <div className="bg-zinc-800/50 rounded-xl p-5 border border-zinc-700">
-              <h3 className="text-sm font-semibold text-zinc-200 mb-3">How to get a Telegram Bot Token</h3>
-              <ol className="text-sm text-zinc-400 space-y-2 list-decimal list-inside">
-                <li>Open Telegram and search for <span className="font-mono text-orange-400">@BotFather</span></li>
-                <li>Send <span className="font-mono text-orange-400">/newbot</span> and follow the prompts</li>
-                <li>Copy the token that looks like <span className="font-mono text-zinc-500">123456789:ABCdefGHI...</span></li>
-              </ol>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-2">Bot Token</label>
-              <input
-                type="text"
-                value={telegramTokenInput}
-                onChange={(e) => setTelegramTokenInput(e.target.value)}
-                placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz"
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent font-mono text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-zinc-300 mb-2">Your Telegram User ID <span className="text-zinc-500">(optional)</span></label>
-              <input
-                type="text"
-                value={telegramUserIdInput}
-                onChange={(e) => setTelegramUserIdInput(e.target.value)}
-                placeholder="e.g. 12345678"
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-3 text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent font-mono text-sm"
-              />
-              <p className="text-xs text-zinc-500 mt-2">Restricts bot access to just you. Send /start to @userinfobot to find your ID.</p>
-            </div>
-            {error && (
-              <div className="flex items-center gap-2 text-red-400 text-sm">
-                <AlertCircle className="w-4 h-4" /> {error}
+          <div className="space-y-6 animate-in fade-in">
+            <p className="text-sm text-zinc-400">
+              Connect Telegram so you can chat with your agent from your phone — anywhere, anytime.
+            </p>
+
+            {!skipTelegram ? (
+              <>
+                <div className="bg-zinc-800/50 rounded-xl p-5 border border-zinc-700 space-y-3">
+                  <div className="flex items-center gap-3 mb-2">
+                    <QrCode className="w-5 h-5 text-sky-400" />
+                    <h3 className="text-sm font-semibold text-zinc-200">Quick Setup (2 minutes)</h3>
+                  </div>
+                  <ol className="text-sm text-zinc-400 space-y-2 list-decimal list-inside">
+                    <li>Open Telegram on your phone</li>
+                    <li>Search for <span className="font-mono text-sky-400">@BotFather</span> and tap Start</li>
+                    <li>Send <span className="font-mono text-sky-400">/newbot</span> — give it a name — copy the token</li>
+                  </ol>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-zinc-300 mb-2">Bot token</label>
+                  <input
+                    type="text"
+                    value={telegramToken}
+                    onChange={(e) => setTelegramToken(e.target.value)}
+                    placeholder="Paste the token from BotFather"
+                    className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent font-mono text-sm"
+                  />
+                </div>
+              </>
+            ) : (
+              <div className="bg-zinc-800/50 rounded-xl p-6 border border-zinc-700 text-center">
+                <p className="text-zinc-400">No worries! You can always add Telegram later in Settings.</p>
+                <p className="text-xs text-zinc-500 mt-2">You'll still be able to chat with your agent right here in the workspace.</p>
               </div>
             )}
-            <div className="flex gap-3">
-              <button onClick={() => setStep(2)} className="px-4 py-3 rounded-lg border border-zinc-700 text-zinc-400 hover:text-zinc-200 transition-colors">
+
+            <button
+              onClick={() => setSkipTelegram(!skipTelegram)}
+              className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+            >
+              {skipTelegram ? "Actually, I want to connect Telegram" : "Skip for now — I'll do this later"}
+            </button>
+
+            <div className="flex gap-3 pt-2">
+              <button onClick={() => setStep(2)} className="px-4 py-3.5 rounded-xl border border-zinc-700 text-zinc-400 hover:text-zinc-200 transition-colors">
                 <ArrowLeft className="w-4 h-4" />
               </button>
               <button
-                onClick={handleTelegramSubmit}
-                disabled={!telegramTokenInput.trim() || loading}
-                className="flex-1 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium rounded-lg py-3 flex items-center justify-center gap-2 transition-all"
+                onClick={handleConnected}
+                disabled={(!skipTelegram && !telegramToken.trim()) || loading}
+                className="flex-1 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium rounded-xl py-3.5 flex items-center justify-center gap-2 transition-all"
               >
                 {loading ? (
-                  <span className="flex items-center gap-2"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Connecting...</span>
+                  <span className="flex items-center gap-2"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Setting up...</span>
                 ) : (
-                  <>Connect Telegram <ArrowRight className="w-4 h-4" /></>
+                  <>Continue <ArrowRight className="w-4 h-4" /></>
                 )}
               </button>
             </div>
@@ -352,82 +495,68 @@ export default function Onboarding({ agentState, updateState, unlockAchievement,
 
       case 4:
         return (
-          <div className="space-y-6 text-center">
-            <div className="py-6">
-              <div className="relative w-24 h-24 mx-auto mb-6">
-                <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-red-600 rounded-2xl animate-pulse" />
-                <div className="absolute inset-1 bg-zinc-900 rounded-xl flex items-center justify-center">
-                  <Power className="w-10 h-10 text-orange-500" />
+          <div className="space-y-8 text-center animate-in fade-in">
+            <div className="py-4">
+              <div className="relative w-28 h-28 mx-auto mb-6">
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-red-600 rounded-3xl animate-pulse opacity-50" />
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-red-600 rounded-3xl flex items-center justify-center">
+                  <Sparkles className="w-12 h-12 text-white" />
                 </div>
               </div>
-              <h3 className="text-xl font-bold text-zinc-100 mb-2">Ready to Launch</h3>
-              <p className="text-zinc-400 max-w-sm mx-auto">
-                Your agent <span className="text-orange-400 font-semibold">{agentState.agentName}</span> is configured and ready.
-                Hit the button to bring it online.
+              <h3 className="text-2xl font-bold text-zinc-100 mb-3">
+                {agentState.agentName} is ready
+              </h3>
+              <p className="text-zinc-400 max-w-md mx-auto leading-relaxed">
+                Your personal AI assistant has been configured with your context, preferences, and skills.
+                It runs entirely on this device — private, always on, always yours.
               </p>
             </div>
-            <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700 text-left">
-              <h4 className="text-xs uppercase tracking-wide text-zinc-500 mb-3">Configuration Summary</h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-zinc-400">Agent</span><span className="text-zinc-200">{agentState.agentName}</span></div>
-                <div className="flex justify-between"><span className="text-zinc-400">Template</span><span className="text-zinc-200">{agentState.templateId.replace(/-/g, " ")}</span></div>
-                <div className="flex justify-between"><span className="text-zinc-400">AI Provider</span><span className="text-zinc-200">{agentState.apiProvider}</span></div>
-                <div className="flex justify-between"><span className="text-zinc-400">Telegram</span><span className="text-emerald-400">Connected</span></div>
+
+            <div className="bg-zinc-800/50 rounded-xl p-5 border border-zinc-700 text-left max-w-sm mx-auto">
+              <h4 className="text-xs uppercase tracking-wide text-zinc-500 mb-3">Your Agent</h4>
+              <div className="space-y-2.5 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-zinc-400">Name</span>
+                  <span className="text-zinc-200 font-medium">{agentState.agentName}</span>
+                </div>
+                {selectedRole && (
+                  <div className="flex justify-between">
+                    <span className="text-zinc-400">Built for</span>
+                    <span className="text-zinc-200">{selectedRole}</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-zinc-400">Brain</span>
+                  <span className="text-zinc-200">{AI_BRAINS.find((b) => b.id === agentState.apiProvider)?.name || "Configured"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-400">Telegram</span>
+                  <span className={agentState.telegramConnected ? "text-emerald-400" : "text-zinc-500"}>
+                    {agentState.telegramConnected ? "Connected" : "Skipped"}
+                  </span>
+                </div>
               </div>
             </div>
-            <div className="flex gap-3">
-              <button onClick={() => setStep(3)} className="px-4 py-3 rounded-lg border border-zinc-700 text-zinc-400 hover:text-zinc-200 transition-colors">
+
+            <div className="flex gap-3 max-w-sm mx-auto">
+              <button onClick={() => setStep(3)} className="px-4 py-3.5 rounded-xl border border-zinc-700 text-zinc-400 hover:text-zinc-200 transition-colors">
                 <ArrowLeft className="w-4 h-4" />
               </button>
               <button
-                onClick={handleActivate}
+                onClick={handleLaunch}
                 disabled={loading}
-                className="flex-1 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 disabled:opacity-40 text-white font-bold rounded-lg py-4 flex items-center justify-center gap-2 transition-all text-lg"
+                className="flex-1 bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 disabled:opacity-40 text-white font-bold rounded-xl py-4 flex items-center justify-center gap-2 transition-all text-lg"
               >
                 {loading ? (
                   <span className="flex items-center gap-2">
                     <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Starting Gateway...
+                    Starting {agentState.agentName}...
                   </span>
                 ) : (
                   <>
-                    <Sparkles className="w-5 h-5" /> Launch Agent
+                    <Rocket className="w-5 h-5" /> Launch
                   </>
                 )}
-              </button>
-            </div>
-          </div>
-        );
-
-      case 5:
-        return (
-          <div className="space-y-6 text-center">
-            <div className="py-6">
-              <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center">
-                <Check className="w-12 h-12 text-white" />
-              </div>
-              <h3 className="text-2xl font-bold text-zinc-100 mb-2">Agent is Live!</h3>
-              <p className="text-zinc-400 max-w-sm mx-auto">
-                <span className="text-emerald-400 font-semibold">{agentState.agentName}</span> is running on your Raspberry Pi.
-                Send your first message to complete the onboarding.
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
-              <button
-                onClick={handleFirstMessage}
-                className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-xl p-4 transition-colors"
-              >
-                <MessageCircle className="w-6 h-6 text-blue-400 mx-auto mb-2" />
-                <p className="text-sm font-medium text-zinc-200">Open Chat</p>
-                <p className="text-xs text-zinc-500">Chat here in the workspace</p>
-              </button>
-              <button
-                onClick={handleFirstMessage}
-                className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-xl p-4 transition-colors"
-              >
-                <Send className="w-6 h-6 text-sky-400 mx-auto mb-2" />
-                <p className="text-sm font-medium text-zinc-200">Use Telegram</p>
-                <p className="text-xs text-zinc-500">Message your bot directly</p>
               </button>
             </div>
           </div>
@@ -442,16 +571,20 @@ export default function Onboarding({ agentState, updateState, unlockAchievement,
     <div className="p-8 max-w-2xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-zinc-100 mb-1">Agent Setup</h1>
-        <p className="text-zinc-400">Configure your personal AI agent in 6 steps</p>
+        <h1 className="text-2xl font-bold text-zinc-100 mb-1">
+          {step === 0 ? "Welcome" : STEPS[step]?.title}
+        </h1>
+        <p className="text-zinc-400">
+          {step === 0 ? "Let's set up your personal AI agent" : STEPS[step]?.subtitle}
+        </p>
       </div>
 
-      {/* Progress Steps */}
+      {/* Progress */}
       <div className="flex items-center gap-1 mb-8">
         {STEPS.map((s, i) => {
-          const Icon = s.icon;
-          const completed = isStepCompleted(i);
+          const completed = isCompleted(i);
           const active = step === i;
+          const Icon = s.icon;
           return (
             <div key={s.id} className="flex items-center flex-1">
               <button
@@ -474,14 +607,7 @@ export default function Onboarding({ agentState, updateState, unlockAchievement,
         })}
       </div>
 
-      {/* Step Title */}
-      <div className="mb-6">
-        <h2 className="text-xl font-bold text-zinc-100">{STEPS[step]?.title}</h2>
-        <p className="text-sm text-zinc-400">{STEPS[step]?.subtitle}</p>
-      </div>
-
-      {/* Step Content */}
-      {renderStepContent()}
+      {renderStep()}
     </div>
   );
 }
