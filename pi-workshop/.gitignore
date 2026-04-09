@@ -1,0 +1,5 @@
+node_modules/
+workspace-ui/node_modules/
+workspace-ui/dist/
+state.json
+.env

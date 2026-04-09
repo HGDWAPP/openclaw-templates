@@ -1,0 +1,14 @@
+{
+  "name": "openclaw-pi-workshop",
+  "version": "1.0.0",
+  "description": "Gamified workspace UI for OpenClaw on Raspberry Pi — workshop edition",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "build-ui": "cd workspace-ui && npm install && npm run build",
+    "setup": "npm install && npm run build-ui"
+  },
+  "dependencies": {
+    "express": "^4.21.0"
+  }
+}
