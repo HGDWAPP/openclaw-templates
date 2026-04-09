@@ -8,7 +8,7 @@ interface Props {
   unlockAchievement: (id: string, xp: number) => void;
 }
 
-const SKILLS = [
+const SKILLS: { id: string; name: string; desc: string; icon: typeof Briefcase; color: string; capabilities: string[]; comingSoon?: boolean }[] = [
   {
     id: "chief-of-staff",
     name: "Personal Chief of Staff",
@@ -32,6 +32,7 @@ const SKILLS = [
     icon: Code,
     color: "from-emerald-600 to-teal-600",
     capabilities: ["Code review", "Documentation", "Deploy monitoring", "Bug triage", "Tech research", "PR summaries"],
+    comingSoon: true,
   },
   {
     id: "research-analyst",
@@ -40,6 +41,7 @@ const SKILLS = [
     icon: BookOpen,
     color: "from-purple-600 to-violet-600",
     capabilities: ["Deep research", "Competitive analysis", "Market reports", "Knowledge synthesis", "Citation tracking", "Briefing generation"],
+    comingSoon: true,
   },
   {
     id: "blank",
@@ -117,7 +119,7 @@ export default function Templates({ agentState, updateState, unlockAchievement }
 
                 <button
                   onClick={() => handleInstall(skill.id)}
-                  disabled={isActive || isInstalling}
+                  disabled={isActive || isInstalling || skill.comingSoon}
                   className={`w-full py-2.5 rounded-lg text-sm font-medium transition-all ${
                     isActive
                       ? "bg-zinc-800 text-zinc-500 cursor-default"
@@ -126,7 +128,7 @@ export default function Templates({ agentState, updateState, unlockAchievement }
                       : "bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white"
                   }`}
                 >
-                  {isActive ? "Active Skill Set" : isInstalling ? (
+                  {skill.comingSoon ? "Coming Soon" : isActive ? "Active Skill Set" : isInstalling ? (
                     <span className="flex items-center justify-center gap-2">
                       <span className="w-3.5 h-3.5 border-2 border-zinc-500 border-t-zinc-200 rounded-full animate-spin" />
                       Loading skills...

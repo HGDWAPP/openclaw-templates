@@ -165,8 +165,6 @@ app.post("/api/setup/template", (req, res) => {
   const validTemplates = [
     "chief-of-staff",
     "marketing-operator",
-    "dev-assistant",
-    "research-analyst",
     "blank",
   ];
 

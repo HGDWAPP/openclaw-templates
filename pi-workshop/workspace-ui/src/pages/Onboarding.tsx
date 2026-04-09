@@ -74,11 +74,11 @@ const AI_BRAINS = [
   },
 ];
 
-const SKILLS = [
+const SKILLS: { id: string; name: string; desc: string; comingSoon?: boolean }[] = [
   { id: "chief-of-staff", name: "Personal Chief of Staff", desc: "Email triage, task management, calendar, relationship tracking" },
   { id: "marketing-operator", name: "Content & Marketing", desc: "Content calendar, social posts, audience growth, copywriting" },
-  { id: "dev-assistant", name: "Dev Companion", desc: "Code review, docs, deploy monitoring, technical research" },
-  { id: "research-analyst", name: "Research Partner", desc: "Deep research, competitive analysis, knowledge synthesis" },
+  { id: "dev-assistant", name: "Dev Companion", desc: "Code review, docs, deploy monitoring, technical research", comingSoon: true },
+  { id: "research-analyst", name: "Research Partner", desc: "Deep research, competitive analysis, knowledge synthesis", comingSoon: true },
   { id: "blank", name: "Start Fresh", desc: "Build your agent's capabilities from scratch" },
 ];
 
@@ -318,19 +318,22 @@ export default function Onboarding({ agentState, updateState, unlockAchievement,
                 {SKILLS.map((skill) => (
                   <button
                     key={skill.id}
-                    onClick={() => updateState({ templateId: skill.id })}
+                    onClick={() => !skill.comingSoon && updateState({ templateId: skill.id })}
+                    disabled={skill.comingSoon}
                     className={`w-full text-left rounded-xl border-2 p-4 transition-all ${
-                      agentState.templateId === skill.id
+                      skill.comingSoon
+                        ? "border-zinc-800 bg-zinc-900/50 opacity-60 cursor-not-allowed"
+                        : agentState.templateId === skill.id
                         ? "border-orange-500 bg-zinc-800/80"
                         : "border-zinc-800 bg-zinc-900 hover:border-zinc-700"
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-zinc-200 text-sm">{skill.name}</p>
+                        <p className="font-medium text-zinc-200 text-sm">{skill.name}{skill.comingSoon && <span className="ml-2 text-xs text-zinc-600">(Coming Soon)</span>}</p>
                         <p className="text-xs text-zinc-500">{skill.desc}</p>
                       </div>
-                      {agentState.templateId === skill.id && <Check className="w-4 h-4 text-orange-500" />}
+                      {agentState.templateId === skill.id && !skill.comingSoon && <Check className="w-4 h-4 text-orange-500" />}
                     </div>
                   </button>
                 ))}
